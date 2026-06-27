@@ -5,4 +5,5 @@
     <Script file="CraftLink-1.0.lua"/>
     <Script file="CraftLink_Registry.lua"/>
     <Script file="CraftLink_Professions.lua"/>
+    <Script file="CraftLink_Recipes.lua"/>
 </Ui>
