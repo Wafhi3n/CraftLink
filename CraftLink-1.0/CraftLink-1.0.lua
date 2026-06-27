@@ -147,15 +147,24 @@ function lib:ProfessionCatalogue(prof)
     local def = self.professions[prof]
     if not def then return {} end
     local seen, out = {}, {}
-    if def.produces then
-        for spellID, itemID in pairs(def.produces) do
-            if itemID and not seen[itemID] then seen[itemID] = true; out[#out + 1] = { itemID = itemID, spellID = spellID } end
+    local function add(entry, key)
+        if not seen[key] then seen[key] = true; out[#out + 1] = entry end
+    end
+    -- Recettes : objet produit (itemID+spellID) OU service sans objet (spellID seul, ex. enchants).
+    if def.recipes then
+        for _, spellID in ipairs(def.recipes) do
+            local itemID = def.produces and def.produces[spellID]
+            if itemID then add({ itemID = itemID, spellID = spellID }, "i" .. itemID)
+            else add({ spellID = spellID, service = true }, "s" .. spellID) end
         end
     end
+    -- Matières récoltées (Herbalism/Skinning/Fishing/Mining) — commandables.
     if def.gathers then
-        for _, itemID in ipairs(def.gathers) do
-            if itemID and not seen[itemID] then seen[itemID] = true; out[#out + 1] = { itemID = itemID } end
-        end
+        for _, itemID in ipairs(def.gathers) do add({ itemID = itemID }, "i" .. itemID) end
+    end
+    -- Mats de désenchantement (Enchanteur) — commandables comme matières.
+    if def.disenchant then
+        for itemID in pairs(def.disenchant) do add({ itemID = itemID }, "i" .. itemID) end
     end
     return out
 end
