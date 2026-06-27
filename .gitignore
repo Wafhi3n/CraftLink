@@ -1,0 +1,9 @@
+# OS / éditeur
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Sorties de packaging
+/.release/
+*.zip

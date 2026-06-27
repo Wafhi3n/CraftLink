@@ -1,0 +1,15 @@
+# Packaging CurseForge / BigWigs packager pour CraftLink-1.0.
+# CraftLink est une LIBRAIRIE EMBARQUÉE, pas un addon installé séparément : elle est
+# tirée dans le dossier Libs/ de chaque addon hôte (Guild Economy, Crafting Order - Classic)
+# au moment du packaging. Ce .pkgmeta sert si on publie la lib comme projet "Library" distinct.
+
+package-as: CraftLink
+
+enable-nolib-creation: no
+
+# La lib embarque LibStub. Pas de dépendances externes téléchargées.
+externals: {}
+
+ignore:
+    - sync-libs.ps1
+    - README.md
