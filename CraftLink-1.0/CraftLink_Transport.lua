@@ -29,7 +29,12 @@ lib._sendBusy    = lib._sendBusy    or false
 -- ------------------------------------------------------------------
 -- API publique d'enregistrement
 -- ------------------------------------------------------------------
-function lib:RegisterHandler(verb, fn) self._handlers[verb] = fn end
+-- Plusieurs modules peuvent écouter le même verbe (ex. HI : présence ET resync d'ordres).
+function lib:RegisterHandler(verb, fn)
+    local list = self._handlers[verb]
+    if not list then list = {}; self._handlers[verb] = list end
+    list[#list + 1] = fn
+end
 function lib:OnPresence(fn)            self._presenceCb = fn end
 function lib:IsNetworkReady()          return self._channelJoined == true end
 function lib:ChannelName()             return CHANNEL_NAME end
@@ -107,8 +112,11 @@ end
 function lib:_Dispatch(sender, message, distribution)
     if not message or message == "" then return end
     local verb = message:match("^([A-Z]+)")
-    local fn = verb and self._handlers[verb]
-    if fn then pcall(fn, playerShort(sender), message, distribution) end
+    local list = verb and self._handlers[verb]
+    if list then
+        local who = playerShort(sender)
+        for _, fn in ipairs(list) do pcall(fn, who, message, distribution) end
+    end
 end
 
 -- ------------------------------------------------------------------
