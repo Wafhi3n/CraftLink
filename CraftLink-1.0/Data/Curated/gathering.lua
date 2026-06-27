@@ -25,7 +25,10 @@ return {
     Skinning = {
         aliases = { "Skinning", "Dépeçage", "Kürschnerei", "Desuello" },
         gathers = {
-            -- À COMPLÉTER : peaux/cuirs (Light/Medium/Heavy Leather, Knothide, Borean, etc.)
+            783, 2318, 2319, 2934, 4232, 4234, 4235, 4304, 5784, 5785, 6470, 6471,
+            7287, 8154, 8169, 8170, 8171, 12607, 12731, 15408, 15410, 15412, 15414, 15415,
+            15416, 17012, 21887, 25699, 25700, 25708, 28547, 29539, 29548, 33567, 33568, 38557,
+            38561, 38568, 44128,
         },
     },
     Fishing = {
