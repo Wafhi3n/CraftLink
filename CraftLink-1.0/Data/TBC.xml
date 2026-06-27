@@ -1,0 +1,15 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- Données de recettes BURNING CRUSADE (cap 375). Inclus par le .toc flavor _TBC de chaque
+         addon (le client charge Addon_TBC.toc sur BCC). Dataset COMPLET (vanilla + ajouts TBC) +
+         Joaillerie. Généré depuis Wowhead tbc/ (tools/gen_flavor.lua). -->
+    <Script file="TBC\Alchemy.lua"/>
+    <Script file="TBC\Blacksmithing.lua"/>
+    <Script file="TBC\Cooking.lua"/>
+    <Script file="TBC\Enchanting.lua"/>
+    <Script file="TBC\Engineering.lua"/>
+    <Script file="TBC\FirstAid.lua"/>
+    <Script file="TBC\Jewelcrafting.lua"/>
+    <Script file="TBC\Leatherworking.lua"/>
+    <Script file="TBC\Mining.lua"/>
+    <Script file="TBC\Tailoring.lua"/>
+</Ui>
