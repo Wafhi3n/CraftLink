@@ -1,6 +1,6 @@
 -- Data/Gathering.lua — métiers de RÉCOLTE (chargé en plus des recettes, toutes saveurs).
--- GÉNÉRÉ depuis Data/Curated/gathering.lua. Items commandables (gathers), pas de recettes →
--- n'affecte pas dataVersion. Mining : merge avec ses recettes de fonte (charger APRÈS).
+-- GÉNÉRÉ depuis Data/Curated/gathering.lua. gathers = itemID commandables (pas de recettes →
+-- n'affecte pas dataVersion). Mining : merge avec ses recettes de fonte (charger APRÈS).
 
 local CraftLink = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not CraftLink then return end
@@ -29,6 +29,17 @@ CraftLink:RegisterProfession("Skinning", {
         7287, 8154, 8169, 8170, 8171, 12607, 12731, 15408, 15410, 15412, 15414, 15415,
         15416, 17012, 21887, 25699, 25700, 25708, 28547, 29539, 29548, 33567, 33568, 38557,
         38561, 38568, 44128,
+    },
+})
+
+CraftLink:RegisterProfession("Fishing", {
+    aliases = { "Fishing", "Pêche", "Angeln", "Pesca" },
+    gathers = {
+        4603, 6289, 6291, 6303, 6308, 6317, 6361, 6362, 7974, 8365, 13754, 13756,
+        13758, 13759, 13760, 13888, 13889, 13890, 21071, 21153, 27422, 27425, 27429, 27435,
+        27437, 27438, 27439, 33823, 33824, 35285, 41800, 41801, 41802, 41803, 41805, 41806,
+        41807, 41808, 41809, 41810, 41812, 41813, 41814, 43571, 43572, 43646, 43647, 43652,
+        45907,
     },
 })
 
