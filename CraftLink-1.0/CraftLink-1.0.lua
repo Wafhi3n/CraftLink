@@ -109,6 +109,35 @@ function lib:GetProfession(prof)
     return self.professions[prof]
 end
 
+-- Objet produit par une recette (spellID -> itemID), ou nil (services/enchantements).
+function lib:RecipeProduct(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.produces and def.produces[spellID] or nil
+end
+
+-- Réactifs d'une recette : { {itemID, qty}, ... } ou nil. Noms via ItemName (runtime, localisé).
+function lib:RecipeReagents(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.reagents and def.reagents[spellID] or nil
+end
+
+-- Conversions « détruire pour obtenir des composants » (disenchant/milling/prospecting) ou nil.
+function lib:Conversions(prof)
+    local def = self.professions[prof]
+    return def and def.conversions or nil
+end
+
+-- Résolution de NOM multilingue : le client localise via GetItemInfo/GetSpellInfo ; repli baké.
+function lib:ItemName(itemID, fallback)
+    if itemID and GetItemInfo then local n = GetItemInfo(itemID); if n and n ~= "" then return n end end
+    return fallback or (itemID and ("item:" .. itemID)) or "?"
+end
+
+function lib:RecipeName(spellID, fallback)
+    if spellID and GetSpellInfo then local n = GetSpellInfo(spellID); if n and n ~= "" then return n end end
+    return fallback or (spellID and ("spell:" .. spellID)) or "?"
+end
+
 function lib:HasCatalog()
     self:EnsureCatalog()
     return next(self.catalog) ~= nil
