@@ -1,0 +1,16 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- Données de recettes WRATH OF THE LICH KING (cap 450). Inclus par le .toc flavor _Wrath de
+         chaque addon (le client charge Addon_Wrath.toc sur WotLK Classic). Dataset COMPLET +
+         Inscription (milling) + Joaillerie (prospection). Généré depuis Wowhead wotlk/. -->
+    <Script file="Wrath\Alchemy.lua"/>
+    <Script file="Wrath\Blacksmithing.lua"/>
+    <Script file="Wrath\Cooking.lua"/>
+    <Script file="Wrath\Enchanting.lua"/>
+    <Script file="Wrath\Engineering.lua"/>
+    <Script file="Wrath\FirstAid.lua"/>
+    <Script file="Wrath\Inscription.lua"/>
+    <Script file="Wrath\Jewelcrafting.lua"/>
+    <Script file="Wrath\Leatherworking.lua"/>
+    <Script file="Wrath\Mining.lua"/>
+    <Script file="Wrath\Tailoring.lua"/>
+</Ui>
