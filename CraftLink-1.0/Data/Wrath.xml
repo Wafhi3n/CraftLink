@@ -13,4 +13,5 @@
     <Script file="Wrath\Leatherworking.lua"/>
     <Script file="Wrath\Mining.lua"/>
     <Script file="Wrath\Tailoring.lua"/>
+    <Script file="Gathering.lua"/>
 </Ui>

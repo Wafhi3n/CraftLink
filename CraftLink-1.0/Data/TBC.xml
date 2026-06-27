@@ -12,4 +12,5 @@
     <Script file="TBC\Leatherworking.lua"/>
     <Script file="TBC\Mining.lua"/>
     <Script file="TBC\Tailoring.lua"/>
+    <Script file="Gathering.lua"/>
 </Ui>

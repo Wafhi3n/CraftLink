@@ -74,8 +74,15 @@ end
 -- Enregistre les données brutes d'un métier (appelé par les fichiers Data embarqués). Le
 -- catalogue est reconstruit paresseusement au prochain accès (EnsureCatalog). `def` =
 -- { aliases, sellable, disenchant, enchants, recipes (triés), itemToSpell }.
+-- MERGE des champs si le métier existe déjà (ex. Mining = recettes de fonte + `gathers` minerais,
+-- enregistrés par deux fichiers Data distincts). Sinon enregistrement direct. Idempotent.
 function lib:RegisterProfession(name, def)
-    self.professions[name] = def
+    local existing = self.professions[name]
+    if existing then
+        for k, v in pairs(def) do existing[k] = v end
+    else
+        self.professions[name] = def
+    end
     self._catalogDirty = true
     self._aliasMap = nil      -- invalide le cache d'alias (cf. CraftLink_Professions)
 end
@@ -125,6 +132,40 @@ end
 function lib:Conversions(prof)
     local def = self.professions[prof]
     return def and def.conversions or nil
+end
+
+-- Items récoltés par un métier de récolte (Herbalism/Skinning/Fishing/Mining) : { itemID, ... } ou nil.
+function lib:Gathers(prof)
+    local def = self.professions[prof]
+    return def and def.gathers or nil
+end
+
+-- Catalogue COMMANDABLE d'un métier : objets fabricables (via produces, avec spellID pour les
+-- réactifs) + objets récoltables (via gathers, sans spellID). Liste { {itemID=, spellID=}, ... }
+-- dédupliquée par itemID. Sert à l'UI de recherche de craft / commande de matières.
+function lib:ProfessionCatalogue(prof)
+    local def = self.professions[prof]
+    if not def then return {} end
+    local seen, out = {}, {}
+    if def.produces then
+        for spellID, itemID in pairs(def.produces) do
+            if itemID and not seen[itemID] then seen[itemID] = true; out[#out + 1] = { itemID = itemID, spellID = spellID } end
+        end
+    end
+    if def.gathers then
+        for _, itemID in ipairs(def.gathers) do
+            if itemID and not seen[itemID] then seen[itemID] = true; out[#out + 1] = { itemID = itemID } end
+        end
+    end
+    return out
+end
+
+-- Liste triée des métiers connus (catalogue). NE PAS muter.
+function lib:Professions()
+    local out = {}
+    for prof in pairs(self.professions) do out[#out + 1] = prof end
+    table.sort(out)
+    return out
 end
 
 -- Résolution de NOM multilingue : le client localise via GetItemInfo/GetSpellInfo ; repli baké.

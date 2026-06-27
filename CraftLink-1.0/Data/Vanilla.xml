@@ -13,4 +13,6 @@
     <Script file="Vanilla\Mining.lua"/>
     <Script file="Vanilla\Poisons.lua"/>
     <Script file="Vanilla\Tailoring.lua"/>
+    <!-- Métiers de récolte (commande de matières) — chargé APRÈS (merge Mining). -->
+    <Script file="Gathering.lua"/>
 </Ui>
