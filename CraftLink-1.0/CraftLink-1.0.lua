@@ -25,6 +25,12 @@ if not lib then return end  -- déjà chargé par un autre addon avec une versio
 lib.catalog     = lib.catalog or {}
 lib.dataVersion = lib.dataVersion or 0
 
+-- Données brutes par métier, enregistrées par les fichiers Data embarqués (RegisterProfession) :
+-- [prof] = { aliases, sellable, disenchant, enchants, recipes, itemToSpell }. Le catalogue (index
+-- de bits) en est dérivé paresseusement (EnsureCatalog) → la lib est self-contained, sans hôte.
+lib.professions    = lib.professions or {}
+lib._catalogDirty  = lib._catalogDirty or false
+
 -- protocolVersion : compat du FORMAT FILAIRE (verbes/champs des messages réseau). Distinct de
 -- dataVersion (compat des index de bits du catalogue). On le bump quand le wire change de façon
 -- incompatible ; deux clients de protocolVersion différentes peuvent refuser/adapter le dialogue.
@@ -62,30 +68,74 @@ function lib:SetCatalog(professions)
         end
     end
     self.dataVersion = computeDataVersion(self.catalog)
+    self._catalogDirty = false  -- catalogue posé explicitement : pas de reconstruction paresseuse
+end
+
+-- Enregistre les données brutes d'un métier (appelé par les fichiers Data embarqués). Le
+-- catalogue est reconstruit paresseusement au prochain accès (EnsureCatalog). `def` =
+-- { aliases, sellable, disenchant, enchants, recipes (triés), itemToSpell }.
+function lib:RegisterProfession(name, def)
+    self.professions[name] = def
+    self._catalogDirty = true
+    self._aliasMap = nil      -- invalide le cache d'alias (cf. CraftLink_Professions)
+end
+
+-- (Re)construit le catalogue (index de bits) depuis les données enregistrées, si nécessaire.
+-- Idempotent ; appelé en tête de chaque accesseur → l'hôte n'a aucun finalize à ordonnancer.
+function lib:EnsureCatalog()
+    if not self._catalogDirty then return end
+    self._catalogDirty = false
+    local cat = {}
+    for prof, def in pairs(self.professions) do
+        local recipes = def.recipes
+        if type(recipes) == "table" and #recipes > 0 then
+            local pos = {}
+            for i = 1, #recipes do pos[recipes[i]] = i end
+            cat[prof] = { recipes = recipes, pos = pos }
+        end
+    end
+    self.catalog     = cat
+    self.dataVersion = computeDataVersion(cat)
+end
+
+-- itemToSpell d'un métier (itemID produit -> spellID) : repli runtime pour le scan TradeSkill.
+function lib:ItemToSpell(prof)
+    local def = self.professions[prof]
+    return def and def.itemToSpell or nil
+end
+
+-- Données brutes d'un métier (aliases/sellable/disenchant/enchants/...), ou nil.
+function lib:GetProfession(prof)
+    return self.professions[prof]
 end
 
 function lib:HasCatalog()
+    self:EnsureCatalog()
     return next(self.catalog) ~= nil
 end
 
 function lib:DataVersion()
+    self:EnsureCatalog()
     return self.dataVersion
 end
 
 -- Liste ordonnée des spellID d'un métier (ou nil). NE PAS muter.
 function lib:GetRecipes(prof)
+    self:EnsureCatalog()
     local c = self.catalog[prof]
     return c and c.recipes or nil
 end
 
 -- Position de bit (1-based) d'une recette dans son métier, ou nil si inconnue.
 function lib:Position(prof, spellID)
+    self:EnsureCatalog()
     local c = self.catalog[prof]
     return c and c.pos[spellID] or nil
 end
 
 -- Nombre de recettes cataloguées pour un métier (0 si inconnu).
 function lib:Count(prof)
+    self:EnsureCatalog()
     local c = self.catalog[prof]
     return c and #c.recipes or 0
 end

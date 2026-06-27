@@ -1,0 +1,16 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- Données de recettes VANILLA (Classic Era / cap 300). Inclus par le .toc de chaque addon
+         hôte APRÈS lib.xml (les fichiers appellent CraftLink:RegisterProfession). Les autres
+         saveurs auront leur propre XML (TBC.xml cap 375, Wrath.xml cap 450) + dossier dédié ;
+         le .toc flavor de l'addon (_TBC.toc / _Wrath.toc) inclura le bon. Cf. tools/README. -->
+    <Script file="Vanilla\Alchemy.lua"/>
+    <Script file="Vanilla\Blacksmithing.lua"/>
+    <Script file="Vanilla\Cooking.lua"/>
+    <Script file="Vanilla\Enchanting.lua"/>
+    <Script file="Vanilla\Engineering.lua"/>
+    <Script file="Vanilla\FirstAid.lua"/>
+    <Script file="Vanilla\Leatherworking.lua"/>
+    <Script file="Vanilla\Mining.lua"/>
+    <Script file="Vanilla\Poisons.lua"/>
+    <Script file="Vanilla\Tailoring.lua"/>
+</Ui>
