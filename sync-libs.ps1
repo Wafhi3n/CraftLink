@@ -11,7 +11,9 @@ $LibRoot = $PSScriptRoot                       # repo CraftLink
 $DevRoot = Split-Path $LibRoot -Parent         # F:\AddonDevellopement
 
 # Addons qui embarquent CraftLink (chemins relatifs à $DevRoot).
-$Hosts = @("TradeScanner", "CraftingOrderClassic")
+# TradeScanner N'EN FAIT PLUS PARTIE depuis sa v2.0.0 (Étape F, 2026-06-30) : le laisser ici
+# recréerait Libs\CraftLink-1.0 dans un addon qui ne la charge plus (pollution repo + deploy).
+$Hosts = @("CraftingOrderClassic")
 if ($args.Count -gt 0) { $Hosts = $args }
 
 # Dossiers de lib à recopier (depuis le repo CraftLink vers Addon\Libs\).

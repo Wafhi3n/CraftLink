@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 1
+local MAJOR, MINOR = "CraftLink-1.0", 6   -- v6 : métadonnées learnedAt/taughtBy + accesseurs (v5 : balise TEXTE de découverte sous hardware event ; données en whisper)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -126,6 +126,25 @@ end
 function lib:RecipeReagents(prof, spellID)
     local def = self.professions[prof]
     return def and def.reagents and def.reagents[spellID] or nil
+end
+
+-- Niveau de métier auquel la recette s'apprend (spellID -> niveau), ou nil si inconnu
+-- (donnée générée par tools/gen_metadata.lua ; les Poisons Vanilla n'en ont pas).
+function lib:RecipeLearnedAt(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.learnedAt and def.learnedAt[spellID] or nil
+end
+
+-- Résout un objet-PLAN (Recette/Formule/Schéma/Patron/Dessin looté ou en sac) vers
+-- (profCanonical, spellID enseigné), ou nil si l'objet n'enseigne rien de catalogué.
+-- Parcourt tous les métiers : un plan looté ne dit pas de quel métier il relève.
+function lib:RecipeFromPlanItem(itemID)
+    if not itemID then return nil end
+    for prof, def in pairs(self.professions) do
+        local sid = def.taughtBy and def.taughtBy[itemID]
+        if sid then return prof, sid end
+    end
+    return nil
 end
 
 -- Conversions « détruire pour obtenir des composants » (disenchant/milling/prospecting) ou nil.

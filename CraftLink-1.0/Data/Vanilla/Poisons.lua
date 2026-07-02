@@ -61,4 +61,7 @@ CraftLink:RegisterProfession("Poisons", {
         [10922] = 13230,
         [21302] = 25347,
     },
+
+    -- >>> gen_metadata.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- <<< gen_metadata.lua
 })

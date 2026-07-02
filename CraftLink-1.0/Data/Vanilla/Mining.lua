@@ -74,4 +74,22 @@ CraftLink:RegisterProfession("Mining", {
         [16153] = { {10620,1} },
         [22967] = { {18562,1}, {12360,10}, {17010,1}, {18567,3} },
     },
+
+    -- >>> gen_metadata.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- niveau de métier où la recette s'apprend : [spellID] = niveau
+    learnedAt = {
+        [2657] = 25,
+        [2658] = 75,
+        [2659] = 65,
+        [3304] = 65,
+        [3307] = 125,
+        [3308] = 155,
+        [3569] = 165,
+        [10097] = 175,
+        [10098] = 230,
+        [14891] = 230,
+        [16153] = 250,
+        [22967] = 310,
+    },
+    -- <<< gen_metadata.lua
 })

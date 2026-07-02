@@ -79,4 +79,30 @@ CraftLink:RegisterProfession("First Aid", {
         [18630] = { {14047,2} },
         [23787] = { {19441,1} },
     },
+
+    -- >>> gen_metadata.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- niveau de métier où la recette s'apprend : [spellID] = niveau
+    learnedAt = {
+        [3275] = 1,
+        [3276] = 40,
+        [3277] = 80,
+        [3278] = 115,
+        [7928] = 150,
+        [7929] = 180,
+        [7934] = 80,
+        [7935] = 130,
+        [10840] = 210,
+        [10841] = 240,
+        [18629] = 260,
+        [18630] = 290,
+        [23787] = 300,
+    },
+    -- objet-plan (recette/formule/schéma) -> spellID enseigné (alerte loot / dons)
+    taughtBy = {
+        [6454] = 7935,
+        [16112] = 7929,
+        [16113] = 10840,
+        [19442] = 23787,
+    },
+    -- <<< gen_metadata.lua
 })

@@ -5,7 +5,9 @@
 local CraftLink = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not CraftLink then return end
 
-CraftLink:RegisterProfession("FirstAid", {
+-- Clé canonique = "First Aid" (avec espace), comme en Vanilla — l'ancienne génération
+-- (gen_flavor) enregistrait "FirstAid", incohérent inter-saveurs (corrigé 2026-07-02).
+CraftLink:RegisterProfession("First Aid", {
     aliases = { "First Aid", "Secourisme", "Erste Hilfe", "Primeros auxilios" },
 
     recipes = {
@@ -72,4 +74,37 @@ CraftLink:RegisterProfession("FirstAid", {
         [45545] = { {33470,1} },
         [45546] = { {33470,2} },
     },
+
+    -- >>> gen_metadata.lua (généré — Wowhead wotlk ; ne pas éditer à la main)
+    -- niveau de métier où la recette s'apprend : [spellID] = niveau
+    learnedAt = {
+        [3275] = 1,
+        [3276] = 40,
+        [3277] = 80,
+        [3278] = 115,
+        [7928] = 150,
+        [7929] = 180,
+        [7934] = 80,
+        [7935] = 130,
+        [10840] = 210,
+        [10841] = 240,
+        [18629] = 260,
+        [18630] = 290,
+        [23787] = 300,
+        [27032] = 300,
+        [27033] = 330,
+        [45545] = 350,
+        [45546] = 400,
+    },
+    -- objet-plan (recette/formule/schéma) -> spellID enseigné (alerte loot / dons)
+    taughtBy = {
+        [6454] = 7935,
+        [16112] = 7929,
+        [16113] = 10840,
+        [19442] = 23787,
+        [21992] = 27032,
+        [21993] = 27033,
+        [39152] = 45546,
+    },
+    -- <<< gen_metadata.lua
 })

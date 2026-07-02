@@ -7,3 +7,6 @@ Thumbs.db
 # Sorties de packaging
 /.release/
 *.zip
+
+# Cache HTML Wowhead des outils de génération (gros, re-téléchargeable — cf. tools/README.md)
+/tools/wh/
