@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 6   -- v6 : métadonnées learnedAt/taughtBy + accesseurs (v5 : balise TEXTE de découverte sous hardware event ; données en whisper)
+local MAJOR, MINOR = "CraftLink-1.0", 7   -- v7 : gardes anti-clobber sur les fichiers compagnons (Recipes/Registry/Professions) + cache ProfessionCatalogue (v6 : métadonnées learnedAt/taughtBy + accesseurs)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -85,6 +85,7 @@ function lib:RegisterProfession(name, def)
     end
     self._catalogDirty = true
     self._aliasMap = nil      -- invalide le cache d'alias (cf. CraftLink_Professions)
+    self._profCatCache = nil  -- invalide le cache de ProfessionCatalogue (dérivé de def)
 end
 
 -- (Re)construit le catalogue (index de bits) depuis les données enregistrées, si nécessaire.
@@ -162,9 +163,14 @@ end
 -- Catalogue COMMANDABLE d'un métier : objets fabricables (via produces, avec spellID pour les
 -- réactifs) + objets récoltables (via gathers, sans spellID). Liste { {itemID=, spellID=}, ... }
 -- dédupliquée par itemID. Sert à l'UI de recherche de craft / commande de matières.
+-- Résultat mémoïsé par métier (invalidé par RegisterProfession → _profCatCache=nil) : la liste ne
+-- dépend que de `def`, stable après le chargement des Data. Appelée à chaque refresh UI (Commande/
+-- Récolte) et par le scan de crafteurs → la reconstruire à chaque fois coûtait cher. NE PAS muter le retour.
 function lib:ProfessionCatalogue(prof)
     local def = self.professions[prof]
     if not def then return {} end
+    self._profCatCache = self._profCatCache or {}
+    if self._profCatCache[prof] then return self._profCatCache[prof] end
     local seen, out = {}, {}
     local function add(entry, key)
         if not seen[key] then seen[key] = true; out[#out + 1] = entry end
@@ -185,6 +191,7 @@ function lib:ProfessionCatalogue(prof)
     if def.disenchant then
         for itemID in pairs(def.disenchant) do add({ itemID = itemID }, "i" .. itemID) end
     end
+    self._profCatCache[prof] = out
     return out
 end
 

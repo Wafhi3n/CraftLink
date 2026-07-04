@@ -16,6 +16,14 @@
 local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
+-- Anti-clobber (même logique que CraftLink_Transport) : ce fichier compagnon re-patche la lib SANS
+-- passer par le gate de version de LibStub:NewLibrary (qui ne protège que le fichier principal). Sans
+-- ce garde, une copie embarquée plus ANCIENNE chargée APRÈS nous écraserait EncodeKnown/ScanOpenKnown/…
+-- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution du codec RK (+ resync hôtes).
+local RECIPES_REV = 1
+if (lib._recipesRev or 0) >= RECIPES_REV then return end
+lib._recipesRev = RECIPES_REV
+
 -- État partagé (singleton) : [profCanonical] = { [spellID] = true }
 lib.myKnown = lib.myKnown or {}
 

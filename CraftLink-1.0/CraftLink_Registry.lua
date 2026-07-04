@@ -14,6 +14,13 @@
 local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
+-- Anti-clobber (cf. CraftLink_Transport) : fichier compagnon qui re-patche la lib hors du gate de
+-- version LibStub:NewLibrary → une copie plus ANCIENNE chargée après nous écraserait le codec hex.
+-- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution du codec (+ resync hôtes).
+local REGISTRY_REV = 1
+if (lib._registryRev or 0) >= REGISTRY_REV then return end
+lib._registryRev = REGISTRY_REV
+
 local POW = { 1, 2, 4, 8, 16, 32, 64, 128 }  -- POW[b+1] = 2^b
 local floor, format, concat = math.floor, string.format, table.concat
 

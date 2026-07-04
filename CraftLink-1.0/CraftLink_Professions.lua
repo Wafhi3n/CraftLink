@@ -7,6 +7,13 @@
 local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
+-- Anti-clobber (cf. CraftLink_Transport) : fichier compagnon qui re-patche la lib hors du gate de
+-- version LibStub:NewLibrary → une copie plus ANCIENNE chargée après nous écraserait ResolveProfession.
+-- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution (+ resync hôtes).
+local PROFESSIONS_REV = 1
+if (lib._professionsRev or 0) >= PROFESSIONS_REV then return end
+lib._professionsRev = PROFESSIONS_REV
+
 -- Cache des alias : [aliasLower] = profCanonical. Invalidé par RegisterProfession (_aliasMap=nil).
 local function buildAliasMap(self)
     local map = {}
