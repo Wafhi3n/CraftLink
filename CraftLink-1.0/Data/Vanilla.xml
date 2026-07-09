@@ -15,4 +15,6 @@
     <Script file="Vanilla\Tailoring.lua"/>
     <!-- Métiers de récolte (commande de matières) — chargé APRÈS (merge Mining). -->
     <Script file="Gathering.lua"/>
+    <!-- Recettes à cooldown (curaté) — chargé APRÈS (merge cooldowns/cdGroup). -->
+    <Script file="Cooldowns.lua"/>
 </Ui>

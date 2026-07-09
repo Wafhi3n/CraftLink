@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 7   -- v7 : gardes anti-clobber sur les fichiers compagnons (Recipes/Registry/Professions) + cache ProfessionCatalogue (v6 : métadonnées learnedAt/taughtBy + accesseurs)
+local MAJOR, MINOR = "CraftLink-1.0", 8   -- v8 : cooldowns de recettes (Data/Cooldowns.lua + accesseurs + CraftLink_Cooldowns) (v7 : gardes anti-clobber compagnons + cache ProfessionCatalogue)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -134,6 +134,27 @@ end
 function lib:RecipeLearnedAt(prof, spellID)
     local def = self.professions[prof]
     return def and def.learnedAt and def.learnedAt[spellID] or nil
+end
+
+-- Durée (secondes) du cooldown d'une recette, ou nil si la recette n'a pas de mécanique de CD.
+-- L'API du jeu ne distingue pas « prête » de « sans CD » (GetTradeSkillCooldown rend nil pour
+-- les deux) : cette table curatée (Data/Cooldowns.lua, source Wowhead) est la référence.
+function lib:RecipeCooldown(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.cooldowns and def.cooldowns[spellID] or nil
+end
+
+-- Groupe de cooldown PARTAGÉ d'une recette (ex. "transmute"), ou nil si CD indépendant.
+-- Caster un sort du groupe déclenche le CD de tout le groupe, avec la durée du sort casté.
+function lib:RecipeCdGroup(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.cdGroup and def.cdGroup[spellID] or nil
+end
+
+-- Table { [spellID] = durée } des recettes à cooldown d'un métier, ou nil — pour itérer.
+function lib:CooldownRecipes(prof)
+    local def = self.professions[prof]
+    return def and def.cooldowns or nil
 end
 
 -- Résout un objet-PLAN (Recette/Formule/Schéma/Patron/Dessin looté ou en sac) vers
