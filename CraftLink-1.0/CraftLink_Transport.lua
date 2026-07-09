@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 5
+local TRANSPORT_REV = 6
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -50,6 +50,14 @@ local WATCHDOG       = 8.0             -- s : ré-vérifie périodiquement que l
 local BEACON_TAG          = "CLNK1"    -- préfixe reconnaissable (sans « | » : évite les séquences d'échappement du chat)
 local BEACON_MIN_INTERVAL = 30         -- s : plancher dur entre 2 balises (anti-flood)
 
+-- DONNÉES en TEXTE de canal (portée royaume RÉELLE). Même constat que la balise : l'AddonMessage CHANNEL
+-- est muet, mais le TEXTE passe cross-BNet à l'échelle (prouvé 2026-07-09 en observant Deathlog). On
+-- encode un message CraftLink (ex. « ORD|NEW|… ») en texte canal-safe : préfixe `CLD1 ` + payload dont
+-- les « | » sont remplacés par « ~ » (le « | » casse le chat = séquence d'échappement ; Deathlog fait de
+-- même). Émis SOUS HARDWARE EVENT uniquement (SendChatMessage protégé) → l'appelant garantit l'input.
+local DATA_TAG          = "CLD1 "      -- préfixe des messages de DONNÉES (espace inclus = séparateur)
+local DATA_MIN_INTERVAL = 1            -- s : plancher léger anti-accident (le posting est déjà rare)
+
 lib._handlers    = lib._handlers    or {}   -- [verb] = { fn(sender, payload, distribution), ... }
 lib._presenceCb  = lib._presenceCb  or nil  -- fn("join"|"leave", playerShort)
 lib._readyCbs    = lib._readyCbs    or {}   -- { fn(), ... } appelés à chaque (re)acquisition du canal
@@ -57,6 +65,7 @@ lib._sendQueue   = lib._sendQueue   or {}
 lib._sendBusy    = lib._sendBusy    or false
 lib._beaconCb    = lib._beaconCb    or nil   -- fn(senderShort, payload) sur balise texte reçue
 lib._lastBeacon  = lib._lastBeacon  or 0
+lib._lastData    = lib._lastData    or 0     -- throttle des broadcasts DONNÉES canal-texte
 
 -- ------------------------------------------------------------------
 -- Trace (optionnelle) : le produit branche un tracer ; la lib reste agnostique.
@@ -96,14 +105,43 @@ function lib:OnNetworkReady(fn)
     if self._channelJoined then pcall(fn) end
 end
 
+-- Retire NOTRE canal de l'affichage de TOUTES les fenêtres de chat (trafic technique invisible au
+-- joueur) : double sécurité par-dessus JoinTemporaryChannel (déjà frame-less). N'affecte PAS la réception
+-- (l'event CHAT_MSG_CHANNEL arrive au handler indépendamment de l'affichage). Appelé à chaque acquisition.
+local function hideChannelFromFrames()
+    local name = lib._channelName or CHANNEL_NAME
+    for i = 1, (NUM_CHAT_WINDOWS or 10) do
+        local cf = _G["ChatFrame" .. i]
+        if cf and ChatFrame_RemoveChannel then pcall(ChatFrame_RemoveChannel, cf, name) end
+    end
+end
+
 local function fireReady()
     trace("net", "canal acquis (idx=" .. tostring(lib._channelIndex) .. ") → ready callbacks")
+    hideChannelFromFrames()
     for _, fn in ipairs(lib._readyCbs) do pcall(fn) end
 end
 
 local function playerShort(name)
     if not name then return nil end
     return name:match("^([^%-]+)") or name
+end
+
+-- Confinement ROYAUME : le canal custom peut être partagé entre royaumes CONNECTÉS (voire au-delà). Les
+-- DONNÉES de canal (découverte, ordres) ne valent que pour des joueurs avec qui on peut réellement
+-- échanger → on n'accepte que le royaume courant + les royaumes connectés (GetAutoCompleteRealms).
+-- L'émetteur d'un event canal porte un suffixe « -Royaume » (normalisé, sans espace) s'il n'est PAS sur
+-- notre royaume ; pas de suffixe = même royaume. Les noms de perso ne contiennent jamais de « - » (WoW).
+local function sameRealmGroup(author)
+    if type(author) ~= "string" then return false end
+    local realm = author:match("%-(.+)$")
+    if not realm then return true end                       -- pas de suffixe = mon royaume exact
+    local mine = GetNormalizedRealmName and GetNormalizedRealmName()
+    if mine and realm == mine then return true end
+    if GetAutoCompleteRealms then
+        for _, r in ipairs(GetAutoCompleteRealms() or {}) do if r == realm then return true end end
+    end
+    return false
 end
 
 -- ------------------------------------------------------------------
@@ -223,6 +261,24 @@ function lib:SendBeacon(extra)
     return true
 end
 
+-- Diffuse un message CraftLink (ex. « ORD|NEW|… ») en TEXTE de canal → portée ROYAUME réelle, en
+-- complément du whisper. Encode canal-safe (`|`→`~`, préfixe `CLD1 `). À N'APPELER QUE sous hardware
+-- event (SendChatMessage protégé) — typiquement au clic Poster. Throttle léger. Retourne true si émis.
+function lib:BroadcastText(payload)
+    if not (SendChatMessage and self._channelIndex and payload and payload ~= "") then return false end
+    local t = (GetTime and GetTime()) or 0
+    if t - (self._lastData or 0) < DATA_MIN_INTERVAL then return false end
+    self._lastData = t
+    local line = DATA_TAG .. payload:gsub("|", "~")
+    -- Garde diagnostic (pas un blocage) : SendChatMessage est protégé hardware-event-only en Classic Era.
+    -- Si un futur appelant automatisé (retry, migration) casse l'invariant, ça se voit dans /co trace au
+    -- lieu d'un échec silencieux — `pcall` absorbe déjà ADDON_ACTION_BLOCKED sans le remonter autrement.
+    trace("send", "data(texte) : " .. line:sub(1, 60))
+    local ok = pcall(SendChatMessage, line, "CHANNEL", nil, self._channelIndex)
+    if not ok then trace("send", "data(texte) ÉCHOUÉ (hors hardware event ?) : " .. line:sub(1, 40)) end
+    return ok
+end
+
 -- ------------------------------------------------------------------
 -- Réception : dispatch par verbe
 -- ------------------------------------------------------------------
@@ -256,14 +312,21 @@ local function onAddonMsg(me, ...)
     end
 end
 
--- CHAT_MSG_CHANNEL : balise TEXTE de découverte (arg1 texte, arg2 émetteur, arg8 n°, arg9 nom).
+-- CHAT_MSG_CHANNEL : texte de NOTRE canal (arg1 texte, arg2 émetteur, arg8 n°, arg9 nom). Deux formes :
+--   * balise `CLNK1` → découverte (beaconCb) ;   * données `CLD1 ` → message CraftLink dispatché par verbe.
 local function onChannelText(me, ...)
     local text, author = (...), select(2, ...)
-    if not (isMyChannel(select(8, ...), select(9, ...)) and type(text) == "string"
-            and text:sub(1, #BEACON_TAG) == BEACON_TAG
-            and playerShort(author) ~= me and lib._beaconCb) then return end
-    trace("recv", "beacon(texte) " .. tostring(playerShort(author)) .. " : " .. text:sub(1, 40))
-    pcall(lib._beaconCb, playerShort(author), text:sub(#BEACON_TAG + 2))
+    if type(text) ~= "string" or playerShort(author) == me
+       or not isMyChannel(select(8, ...), select(9, ...))
+       or not sameRealmGroup(author) then return end   -- confinement royaume : drop cross-royaume
+    local who = playerShort(author)
+    if text:sub(1, #BEACON_TAG) == BEACON_TAG and lib._beaconCb then
+        trace("recv", "beacon(texte) " .. tostring(who) .. " : " .. text:sub(1, 40))
+        pcall(lib._beaconCb, who, text:sub(#BEACON_TAG + 2))
+    elseif text:sub(1, #DATA_TAG) == DATA_TAG then
+        -- Restaure les « | » (swap inverse) et dispatche comme un AddonMessage CHANNEL (par verbe).
+        lib:_Dispatch(author, (text:sub(#DATA_TAG + 1):gsub("~", "|")), "CHANNEL")
+    end
 end
 
 -- CHANNEL_JOIN/_LEAVE de NOTRE canal → présence (arg2 joueur, arg8 n°, arg9 nom).
@@ -284,8 +347,8 @@ local function installBeaconFilter()
     ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL",
         function(_, _, msg, _, _, _, _, _, _, chanNum, chanName)
             if isMyChannel(chanNum, chanName) and type(msg) == "string"
-               and msg:sub(1, #BEACON_TAG) == BEACON_TAG then
-                return true   -- avale la ligne (ne s'affiche pas dans le chat)
+               and (msg:sub(1, #BEACON_TAG) == BEACON_TAG or msg:sub(1, #DATA_TAG) == DATA_TAG) then
+                return true   -- avale la ligne technique (balise ou données) : invisible dans le chat
             end
             return false
         end)
