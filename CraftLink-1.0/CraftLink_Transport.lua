@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 7
+local TRANSPORT_REV = 8
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -58,6 +58,13 @@ local BEACON_MIN_INTERVAL = 30         -- s : plancher dur entre 2 balises (anti
 local DATA_TAG          = "CLD1 "      -- préfixe des messages de DONNÉES (espace inclus = séparateur)
 local DATA_MIN_INTERVAL = 1            -- s : plancher léger anti-accident (le posting est déjà rare)
 
+-- File d'envoi des DONNÉES canal (pas de la balise : une balise throttlée doit être PERDUE, la rejouer
+-- plus tard ne vaut rien et floode). SendChatMessage exige un hardware event ; un envoi émis hors input
+-- (slash, canal pas encore joint, 2 posts dans la même seconde) était perdu SANS REPRISE. On garde la
+-- ligne et on la draine au prochain clic/touche (pattern Deathlog). FIFO = un NEW part avant son CANCEL.
+local DATA_QUEUE_MAX = 24              -- plafond ; au-delà on drope la PLUS ANCIENNE
+local DATA_QUEUE_TTL = 120             -- s : au-delà la ligne n'a plus d'intérêt sur le canal
+
 lib._handlers    = lib._handlers    or {}   -- [verb] = { fn(sender, payload, distribution), ... }
 lib._presenceCb  = lib._presenceCb  or nil  -- fn("join"|"leave", playerShort)
 lib._readyCbs    = lib._readyCbs    or {}   -- { fn(), ... } appelés à chaque (re)acquisition du canal
@@ -66,6 +73,7 @@ lib._sendBusy    = lib._sendBusy    or false
 lib._beaconCb    = lib._beaconCb    or nil   -- fn(senderShort, payload) sur balise texte reçue
 lib._lastBeacon  = lib._lastBeacon  or 0
 lib._lastData    = lib._lastData    or 0     -- throttle des broadcasts DONNÉES canal-texte
+lib._textQueue   = lib._textQueue   or {}    -- { { line = <ligne CLD1 encodée>, ts = GetTime() }, ... }
 
 -- ------------------------------------------------------------------
 -- Trace (optionnelle) : le produit branche un tracer ; la lib reste agnostique.
@@ -185,6 +193,7 @@ end
 
 -- Watchdog : ré-résout l'index et rejoint si le canal a été perdu (reload, kick, etc.).
 function lib:_Watchdog()
+    self:_TrimTextQueue()                    -- purge des lignes canal périmées (hors du chemin d'input)
     if self._autoJoin == false then return end
     local name = self._channelName or CHANNEL_NAME
     local idx  = GetChannelName and GetChannelName(name) or 0
@@ -271,10 +280,56 @@ end
 
 -- Diffuse un message CraftLink (ex. « ORD|NEW|… ») en TEXTE de canal → portée ROYAUME réelle, en
 -- complément du whisper. Encode canal-safe (`|`→`~` ; le codec garantit qu'aucun champ ne contient `~`,
--- cf. Orders_Codec). À N'APPELER QUE sous hardware event (SendChatMessage protégé) — typiquement au clic Poster.
+-- cf. Orders_Codec). L'envoi immédiat n'aboutit que sous hardware event, canal joint et hors throttle :
+-- sinon la ligne part en FILE et sera drainée au prochain clic/touche. L'appelant n'a donc plus à
+-- garantir le contexte d'input — il garantit seulement que la diffusion est VOULUE (cf. opts.channel).
 function lib:BroadcastText(payload)
     if not (payload and payload ~= "") then return false end
-    return sendChannelLine(DATA_TAG .. payload:gsub("|", "~"), DATA_MIN_INTERVAL, "_lastData")
+    local line = DATA_TAG .. payload:gsub("|", "~")
+    if sendChannelLine(line, DATA_MIN_INTERVAL, "_lastData") then return true end
+    local q = self._textQueue
+    q[#q + 1] = { line = line, ts = (GetTime and GetTime()) or 0 }
+    -- Plafond : on drope la PLUS ANCIENNE. Droper un NEW dont le CANCEL survit est inoffensif (le
+    -- récepteur ignore un CANCEL sur un id inconnu) ; l'inverse laisserait une commande fantôme.
+    while #q > DATA_QUEUE_MAX do table.remove(q, 1) end
+    trace("send", "canal(texte) MIS EN FILE (" .. #q .. ") : " .. line:sub(1, 40))
+    return false
+end
+
+-- Nombre de lignes canal en attente de drain (diagnostic : COCMonitor, /co trace).
+function lib:PendingTextCount() return #self._textQueue end
+
+-- Draine UNE ligne par événement d'input (hardware event → SendChatMessage autorisé). CHEMIN CHAUD :
+-- appelé à chaque clic dans le monde et à chaque touche → la garde sur file vide est la 1re instruction.
+-- Échec d'envoi (throttle, canal perdu, blocage) → l'entrée reste en tête, retentée au prochain input.
+function lib:_DrainText()
+    local q = self._textQueue
+    if #q == 0 then return end
+    if sendChannelLine(q[1].line, DATA_MIN_INTERVAL, "_lastData") then table.remove(q, 1) end
+end
+
+-- Purge des lignes périmées (appelée par le watchdog, pas par le drain : garde le chemin chaud minimal).
+-- FIFO → les plus vieilles sont en tête : on s'arrête à la 1re fraîche.
+function lib:_TrimTextQueue()
+    local q, now = self._textQueue, (GetTime and GetTime()) or 0
+    while #q > 0 and (now - q[1].ts) >= DATA_QUEUE_TTL do
+        trace("send", "canal(texte) PÉRIMÉ, abandon : " .. q[1].line:sub(1, 40))
+        table.remove(q, 1)
+    end
+end
+
+-- Hooks d'input : un clic monde ou une touche = hardware event. `SetPropagateKeyboardInput(true)` est
+-- IMPÉRATIF, sinon le frame avale les touches du joueur (chat, raccourcis d'action).
+local function installInputDrain()
+    if lib._inputDrainInstalled then return end
+    lib._inputDrainInstalled = true
+    local function drain() lib:_DrainText() end
+    if WorldFrame and WorldFrame.HookScript then WorldFrame:HookScript("OnMouseDown", drain) end
+    if CreateFrame then
+        local kf = CreateFrame("Frame", "CraftLinkInputDrainFrame", UIParent)
+        kf:SetScript("OnKeyDown", drain)
+        if kf.SetPropagateKeyboardInput then kf:SetPropagateKeyboardInput(true) end
+    end
 end
 
 -- ------------------------------------------------------------------
@@ -380,6 +435,7 @@ function lib:StartTransport()
         else onPresenceEvent(event, ...) end
     end)
     installBeaconFilter()
+    installInputDrain()
 
     self:JoinNetwork()
     if C_Timer and C_Timer.NewTicker then
