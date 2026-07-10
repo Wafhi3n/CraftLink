@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 6
+local TRANSPORT_REV = 7
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -247,36 +247,34 @@ function lib:Send(payload, scope, target)
     self:_Pump()
 end
 
--- Balise TEXTE de découverte sur le canal (contourne la distribution CHANNEL addon, muette same-BNet).
--- Le NOM de l'émetteur (porté par l'event canal) suffit à la découverte → `extra` optionnel et court.
--- Throttlée dur (anti-flood) ; masquée du chat par le filtre installé dans StartTransport.
-function lib:SendBeacon(extra)
-    if not (SendChatMessage and self._channelIndex) then return false end
+-- Envoi d'une ligne TEXTE sur le canal (balise CLNK1 découverte OU données CLD1) : garde canal +
+-- throttle par champ (`lastKey`) + pcall + trace. SendChatMessage est PROTÉGÉ hardware-event-only en
+-- Classic Era → à n'appeler QUE sous input (clic/slash). Le `pcall` absorbe un ADDON_ACTION_BLOCKED
+-- éventuel ; on le trace pour qu'un futur appelant hors-input se voie dans /co trace au lieu d'un échec
+-- silencieux. Retourne true SEULEMENT si le message est réellement parti (ni throttlé, ni bloqué).
+local function sendChannelLine(line, minInterval, lastKey)
+    if not (SendChatMessage and lib._channelIndex) then return false end
     local t = (GetTime and GetTime()) or 0
-    if t - (self._lastBeacon or 0) < BEACON_MIN_INTERVAL then return false end
-    self._lastBeacon = t
-    local line = BEACON_TAG .. (extra and (" " .. extra) or "")
-    trace("send", "beacon(texte) : " .. line)
-    pcall(SendChatMessage, line, "CHANNEL", nil, self._channelIndex)
-    return true
+    if t - (lib[lastKey] or 0) < minInterval then return false end
+    lib[lastKey] = t
+    trace("send", "canal(texte) : " .. line:sub(1, 60))
+    local ok = pcall(SendChatMessage, line, "CHANNEL", nil, lib._channelIndex)
+    if not ok then trace("send", "canal(texte) ÉCHOUÉ (hardware event ?) : " .. line:sub(1, 40)) end
+    return ok
+end
+
+-- Balise TEXTE de découverte (le NOM de l'émetteur, porté par l'event, suffit → `extra` optionnel/court).
+-- Masquée du chat par le filtre. Throttlée dur (anti-flood ; SendChatMessage subit l'anti-spam serveur).
+function lib:SendBeacon(extra)
+    return sendChannelLine(BEACON_TAG .. (extra and (" " .. extra) or ""), BEACON_MIN_INTERVAL, "_lastBeacon")
 end
 
 -- Diffuse un message CraftLink (ex. « ORD|NEW|… ») en TEXTE de canal → portée ROYAUME réelle, en
--- complément du whisper. Encode canal-safe (`|`→`~`, préfixe `CLD1 `). À N'APPELER QUE sous hardware
--- event (SendChatMessage protégé) — typiquement au clic Poster. Throttle léger. Retourne true si émis.
+-- complément du whisper. Encode canal-safe (`|`→`~` ; le codec garantit qu'aucun champ ne contient `~`,
+-- cf. Orders_Codec). À N'APPELER QUE sous hardware event (SendChatMessage protégé) — typiquement au clic Poster.
 function lib:BroadcastText(payload)
-    if not (SendChatMessage and self._channelIndex and payload and payload ~= "") then return false end
-    local t = (GetTime and GetTime()) or 0
-    if t - (self._lastData or 0) < DATA_MIN_INTERVAL then return false end
-    self._lastData = t
-    local line = DATA_TAG .. payload:gsub("|", "~")
-    -- Garde diagnostic (pas un blocage) : SendChatMessage est protégé hardware-event-only en Classic Era.
-    -- Si un futur appelant automatisé (retry, migration) casse l'invariant, ça se voit dans /co trace au
-    -- lieu d'un échec silencieux — `pcall` absorbe déjà ADDON_ACTION_BLOCKED sans le remonter autrement.
-    trace("send", "data(texte) : " .. line:sub(1, 60))
-    local ok = pcall(SendChatMessage, line, "CHANNEL", nil, self._channelIndex)
-    if not ok then trace("send", "data(texte) ÉCHOUÉ (hors hardware event ?) : " .. line:sub(1, 40)) end
-    return ok
+    if not (payload and payload ~= "") then return false end
+    return sendChannelLine(DATA_TAG .. payload:gsub("|", "~"), DATA_MIN_INTERVAL, "_lastData")
 end
 
 -- ------------------------------------------------------------------
@@ -304,6 +302,14 @@ local function isMyChannel(chanNum, chanName)
     return (type(chanName) == "string" and chanName:upper() == mine_name:upper()) or false
 end
 
+-- Une ligne de NOTRE canal est-elle du trafic TECHNIQUE (balise ou données) ? Partagé par le filtre de
+-- chat (masquage) et le dispatch : un seul endroit pour la liste des préfixes → pas de risque d'oublier
+-- le filtre en ajoutant un préfixe (sinon le message fuiterait en clair dans le chat du joueur).
+local function isTechChannelText(msg)
+    return type(msg) == "string"
+        and (msg:sub(1, #BEACON_TAG) == BEACON_TAG or msg:sub(1, #DATA_TAG) == DATA_TAG)
+end
+
 -- CHAT_MSG_ADDON : trafic addon (toutes portées) → dispatch par verbe (sauf soi-même).
 local function onAddonMsg(me, ...)
     local prefix, message, distribution, sender = ...
@@ -315,11 +321,14 @@ end
 -- CHAT_MSG_CHANNEL : texte de NOTRE canal (arg1 texte, arg2 émetteur, arg8 n°, arg9 nom). Deux formes :
 --   * balise `CLNK1` → découverte (beaconCb) ;   * données `CLD1 ` → message CraftLink dispatché par verbe.
 local function onChannelText(me, ...)
-    local text, author = (...), select(2, ...)
-    if type(text) ~= "string" or playerShort(author) == me
-       or not isMyChannel(select(8, ...), select(9, ...))
-       or not sameRealmGroup(author) then return end   -- confinement royaume : drop cross-royaume
+    local text = (...)
+    -- Gardes ORDONNÉES du moins cher au plus cher : le canal Deathlog (royaume HC) crache des dizaines
+    -- de messages/s → on écarte d'abord par index de canal (numérique) AVANT tout string:match sur l'auteur.
+    if type(text) ~= "string" or not isMyChannel(select(8, ...), select(9, ...))
+       or not isTechChannelText(text) then return end
+    local author = select(2, ...)
     local who = playerShort(author)
+    if who == me or not sameRealmGroup(author) then return end   -- soi-même / confinement royaume
     if text:sub(1, #BEACON_TAG) == BEACON_TAG and lib._beaconCb then
         trace("recv", "beacon(texte) " .. tostring(who) .. " : " .. text:sub(1, 40))
         pcall(lib._beaconCb, who, text:sub(#BEACON_TAG + 2))
@@ -346,8 +355,7 @@ local function installBeaconFilter()
     -- Filtre : signature décalée de (self, event) → chanNum = arg8 (10e param), chanName = arg9 (11e).
     ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL",
         function(_, _, msg, _, _, _, _, _, _, chanNum, chanName)
-            if isMyChannel(chanNum, chanName) and type(msg) == "string"
-               and (msg:sub(1, #BEACON_TAG) == BEACON_TAG or msg:sub(1, #DATA_TAG) == DATA_TAG) then
+            if isMyChannel(chanNum, chanName) and isTechChannelText(msg) then
                 return true   -- avale la ligne technique (balise ou données) : invisible dans le chat
             end
             return false
