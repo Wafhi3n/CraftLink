@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 8
+local TRANSPORT_REV = 9
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -98,7 +98,25 @@ function lib:IsNetworkReady()          return self._channelJoined == true end
 --   SetGlobalChannel(name) : remplace le nom du canal custom (défaut "CraftLinkNet").
 --   SetAutoJoin(false)     : opt-out de l'auto-join → portée "global" indisponible (whisper/guilde OK).
 function lib:SetGlobalChannel(name) if name and name ~= "" then self._channelName = name end end
-function lib:SetAutoJoin(enabled)   self._autoJoin = (enabled ~= false) end
+
+-- Opt-out RÉEL. Avant, SetAutoJoin(false) ne posait qu'un drapeau : le joueur restait DANS le canal,
+-- continuait de recevoir, et `sendChannelLine` continuait d'émettre (elle ne teste que `_channelIndex`).
+-- « /co channel off » promettait pourtant que le carnet global ne fonctionnerait plus. On quitte donc
+-- vraiment, on oublie l'index, et on jette la file d'envoi (ces lignes ne doivent plus jamais partir).
+function lib:LeaveNetwork()
+    if self._channelJoined and LeaveChannelByName then
+        pcall(LeaveChannelByName, self._channelName or CHANNEL_NAME)
+    end
+    self._channelJoined, self._channelIndex, self._joinSince = false, nil, nil
+    for i = #self._textQueue, 1, -1 do self._textQueue[i] = nil end
+    trace("net", "canal quitté (opt-out) — file d'envoi vidée")
+end
+
+function lib:SetAutoJoin(enabled)
+    local on = (enabled ~= false)
+    self._autoJoin = on
+    if not on then self:LeaveNetwork() end
+end
 function lib:GlobalChannelKind()    return self._channelJoined and "custom" or nil end
 
 -- Label humain du canal global ACTIF (pour le statut produit).
@@ -285,6 +303,7 @@ end
 -- garantir le contexte d'input — il garantit seulement que la diffusion est VOULUE (cf. opts.channel).
 function lib:BroadcastText(payload)
     if not (payload and payload ~= "") then return false end
+    if self._autoJoin == false then return false end   -- opt-out : ne rien émettre NI mettre en file
     local line = DATA_TAG .. payload:gsub("|", "~")
     if sendChannelLine(line, DATA_MIN_INTERVAL, "_lastData") then return true end
     local q = self._textQueue
@@ -318,8 +337,12 @@ function lib:_TrimTextQueue()
     end
 end
 
--- Hooks d'input : un clic monde ou une touche = hardware event. `SetPropagateKeyboardInput(true)` est
--- IMPÉRATIF, sinon le frame avale les touches du joueur (chat, raccourcis d'action).
+-- Hooks d'input : un clic monde OU une touche = hardware event → on draine une ligne. Deux points
+-- non-évidents, vérifiés en jeu :
+--   * `EnableKeyboard(true)` est REQUIS, sinon le frame ne reçoit jamais OnKeyDown (le drain ne se
+--     faisait qu'au clic — angle mort partagé par Deathlog, qui l'omet aussi).
+--   * `SetPropagateKeyboardInput(true)` est IMPÉRATIF avec le clavier activé : sans lui le frame
+--     AVALE les touches (chat, raccourcis d'action). Avec, la touche est rejouée telle quelle.
 local function installInputDrain()
     if lib._inputDrainInstalled then return end
     lib._inputDrainInstalled = true
@@ -327,8 +350,9 @@ local function installInputDrain()
     if WorldFrame and WorldFrame.HookScript then WorldFrame:HookScript("OnMouseDown", drain) end
     if CreateFrame then
         local kf = CreateFrame("Frame", "CraftLinkInputDrainFrame", UIParent)
-        kf:SetScript("OnKeyDown", drain)
+        if kf.EnableKeyboard then kf:EnableKeyboard(true) end
         if kf.SetPropagateKeyboardInput then kf:SetPropagateKeyboardInput(true) end
+        kf:SetScript("OnKeyDown", drain)
     end
 end
 
