@@ -85,12 +85,42 @@ inclus par le `.toc` correspondant de chaque addon hôte.
 | Vanilla | **FIGÉ** — ne jamais régénérer `recipes` | MTSL (historique) | `1792301894` (déployée) |
 | TBC | générée (gen_flavor, outil perdu) + enrichie | Wowhead `tbc` | `1073594610` |
 | Wrath | générée (gen_flavor, outil perdu) + enrichie | Wowhead `wotlk` | `362977519` |
-| SoD | à faire (couche à part) | Wowhead `classic` + `seasonId:2` | — |
+| SoD | **couche additive** sur Vanilla (`gen_season.lua`) | Wowhead `classic` + `seasonId:2` | `892995836` (Vanilla+304) |
 
 Clé canonique du Secourisme : `"First Aid"` (avec espace) sur TOUTES les saveurs (TBC/Wrath
 enregistraient `"FirstAid"`, corrigé 2026-07-02). L'outil de génération complète des saveurs
-(`gen_flavor.lua`) a été perdu — à réécrire depuis la structure ci-dessus si on ajoute SoD ou
-qu'on régénère TBC/Wrath (garder `check_dataversion.lua` comme filet).
+(`gen_flavor.lua`) a été perdu — à réécrire depuis la structure ci-dessus si on régénère TBC/Wrath
+(garder `check_dataversion.lua` comme filet).
+
+## Couches SAISONNIÈRES (`gen_season.lua`) — SoD aujourd'hui, Camelot demain
+
+Une saison **ajoute** des recettes à un set de base au lieu de le remplacer. `gen_season.lua` écrit
+`Data/<Season>/<Métier>.lua` (+ `Data/<Season>.xml`) ; chaque fichier appelle
+`CraftLink:ExtendProfession` et s'auto-désactive hors saison (`CraftLink:ActiveSeason() ~= <id>`).
+Le `.toc` **de base** l'inclut APRÈS `Vanilla.xml` — le même .toc sert donc Era classique et SoD.
+
+```powershell
+cd f:\AddonDevellopement\CraftLink
+& "C:\Users\wafhi\AppData\Local\Programs\Lua\bin\lua.exe" tools\check_dataversion.lua   # AVANT
+& "C:\Users\wafhi\AppData\Local\Programs\Lua\bin\lua.exe" tools\gen_season.lua SoD
+& "C:\Users\wafhi\AppData\Local\Programs\Lua\bin\lua.exe" tools\check_dataversion.lua   # APRÈS
+```
+
+**Pourquoi c'est sûr** : `ExtendProfession` appond EN FIN de `recipes`. Les positions 1..N des
+recettes de base — donc les bitfields du registre (`CraftLink_Registry`) déjà encodés chez les
+joueurs — restent valides bit pour bit. Seule la `dataVersion` change, et **seulement pour les
+clients dans la saison** : un joueur Era garde `1792301894` intact. Deux clients de dataVersion
+différentes ne comparent pas leurs bitfields, ce qui est exactement le comportement voulu (ils sont
+sur des royaumes différents, qui ne communiquent jamais). `check_dataversion.lua` refuse (exit 1)
+toute recette saisonnière qui existerait DÉJÀ dans la base : elle décalerait les positions.
+
+⚠️ Les objets-plans (`"classs":9`) portent EUX AUSSI `seasonId` : la jointure `taughtBy` doit s'y
+restreindre, sinon un plan de base est rattaché à un sort saisonnier par collision de nom (mesuré :
+18 faux appariements en Forge).
+
+**Ajouter Camelot** : une entrée dans `SEASONS` de `gen_season.lua` (domaine Wowhead, `seasonId`,
+set de base, liste des métiers) + une dans `SEASONS` de `check_dataversion.lua`, puis une ligne
+`Data\<Season>.xml` dans le `.toc` de base. Aucune modification de la lib.
 
 ## Sources / attribution
 

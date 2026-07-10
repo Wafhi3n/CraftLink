@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 8   -- v8 : cooldowns de recettes (Data/Cooldowns.lua + accesseurs + CraftLink_Cooldowns) (v7 : gardes anti-clobber compagnons + cache ProfessionCatalogue)
+local MAJOR, MINOR = "CraftLink-1.0", 9   -- v9 : couches saisonnières additives (ActiveSeason + ExtendProfession, Data/SoD) (v8 : cooldowns de recettes ; v7 : gardes anti-clobber compagnons + cache ProfessionCatalogue)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -86,6 +86,54 @@ function lib:RegisterProfession(name, def)
     self._catalogDirty = true
     self._aliasMap = nil      -- invalide le cache d'alias (cf. CraftLink_Professions)
     self._profCatCache = nil  -- invalide le cache de ProfessionCatalogue (dérivé de def)
+end
+
+-- ------------------------------------------------------------------
+-- Couches SAISONNIÈRES (Saison de la Découverte, et demain Camelot)
+-- ------------------------------------------------------------------
+-- Saison active du royaume : 0 = aucune (Era classique), 2 = Saison de la Découverte
+-- (`Enum.SeasonID.SeasonOfDiscovery`). Sert de garde aux fichiers Data/<Season>/ : hors de leur
+-- saison ils ne s'enregistrent pas, donc un joueur Era garde EXACTEMENT le catalogue de base
+-- (dataVersion figée) — aucune perturbation des bitfields déjà diffusés.
+function lib:ActiveSeason()
+    if C_Seasons and C_Seasons.GetActiveSeason then
+        local ok, s = pcall(C_Seasons.GetActiveSeason)
+        if ok and type(s) == "number" then return s end
+    end
+    return 0
+end
+
+-- ÉTEND un métier déjà enregistré avec des recettes saisonnières, en APPEND-ONLY.
+--
+-- Contrairement à RegisterProfession (qui REMPLACE `def.recipes`), on ajoute à la FIN : les
+-- positions 1..N des recettes de base — donc les bitfields du registre (cf. CraftLink_Registry)
+-- déjà encodés chez les joueurs — restent valides bit pour bit. Seule `dataVersion` change, ce qui
+-- est voulu : un client dans la saison et un client hors saison ne doivent PAS comparer leurs
+-- bitfields (positions divergentes au-delà de N). Les tables associatives (produces/reagents/
+-- learnedAt/taughtBy/itemToSpell) sont fusionnées clé par clé, sans écraser une entrée de base.
+--
+-- IDEMPOTENT : un spellID déjà présent n'est jamais ré-appondu (deux hôtes embarquant la lib, ou un
+-- double chargement du XML, ne dupliquent donc ni recette ni position).
+-- No-op si le métier de base n'existe pas : une couche saisonnière n'invente pas un métier.
+function lib:ExtendProfession(name, def)
+    local base = self.professions[name]
+    if not (base and type(base.recipes) == "table" and type(def) == "table") then return end
+    if type(def.recipes) == "table" then
+        local seen = {}
+        for _, id in ipairs(base.recipes) do seen[id] = true end
+        for _, id in ipairs(def.recipes) do
+            if not seen[id] then seen[id] = true; base.recipes[#base.recipes + 1] = id end
+        end
+    end
+    for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable" }) do
+        local add = def[key]
+        if type(add) == "table" then
+            local dst = base[key]; if not dst then dst = {}; base[key] = dst end
+            for k, v in pairs(add) do if dst[k] == nil then dst[k] = v end end
+        end
+    end
+    self._catalogDirty = true
+    self._profCatCache = nil   -- ProfessionCatalogue dérive de `def` → cache périmé
 end
 
 -- (Re)construit le catalogue (index de bits) depuis les données enregistrées, si nécessaire.

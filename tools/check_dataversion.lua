@@ -25,16 +25,27 @@ local FLAVORS = {
                 "FirstAid", "Inscription", "Jewelcrafting", "Leatherworking", "Mining", "Tailoring" },
 }
 
+-- Couches SAISONNIÈRES (Data/<Season>/, ExtendProfession) : appondues EN FIN du set de base.
+-- Leur dataVersion diffère forcément de celle de la base — c'est VOULU (un client dans la saison
+-- ne doit pas comparer ses bitfields avec un client hors saison). Ce qui est INTERDIT, c'est
+-- qu'une recette saisonnière existe déjà dans la base : elle décalerait les positions.
+local SEASONS = {
+    SoD = { base = "Vanilla", profs = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting",
+            "Engineering", "FirstAid", "Leatherworking", "Mining", "Tailoring" } },
+}
+
 local function readFile(p)
     local f = io.open(p, "rb"); if not f then return nil end
     local c = f:read("*a"); f:close(); return c
 end
 
 -- Extrait (nom canonique enregistré, liste ordonnée des spellID) d'un fichier Data.
+-- Reconnaît RegisterProfession (set de base) ET ExtendProfession (couche saisonnière).
 local function parseDataFile(path)
     local content = readFile(path)
     if not content then return nil end
     local name  = content:match('RegisterProfession%("([^"]+)"')
+                  or content:match('ExtendProfession%("([^"]+)"')
     local block = content:match("recipes%s*=%s*(%b{})")
     if not name or not block then return nil end
     local ids = {}
@@ -79,6 +90,48 @@ for _, flavor in ipairs(names) do
         end
         print(string.format("%-8s dataVersion=%-12d recettes=%d%s%s", flavor, v, nRec,
             (#missing > 0) and ("  (fichiers absents : " .. table.concat(missing, ", ") .. ")") or "", note))
+    end
+end
+
+-- ------------------------------------------------------------------
+-- Couches saisonnières : base + append. Garde = AUCUNE collision avec la base.
+-- ------------------------------------------------------------------
+local seasonNames = {}
+for s in pairs(SEASONS) do seasonNames[#seasonNames + 1] = s end
+table.sort(seasonNames)
+
+for _, season in ipairs(seasonNames) do
+    if not only or only == season then
+        local cfg = SEASONS[season]
+        local catalog, nBase, nAdd, collisions = {}, 0, 0, {}
+        -- 1) le set de base, dans son ordre figé
+        for _, prof in ipairs(FLAVORS[cfg.base]) do
+            local name, ids = parseDataFile(DATA_ROOT .. cfg.base .. [[\]] .. prof .. ".lua")
+            if name then catalog[name] = ids; nBase = nBase + #ids end
+        end
+        -- 2) la couche, APPONDUE en fin (exactement ce que fait lib:ExtendProfession)
+        for _, prof in ipairs(cfg.profs) do
+            local name, ids = parseDataFile(DATA_ROOT .. season .. [[\]] .. prof .. ".lua")
+            if name and catalog[name] then
+                local seen = {}
+                for _, id in ipairs(catalog[name]) do seen[id] = true end
+                for _, id in ipairs(ids) do
+                    if seen[id] then collisions[#collisions + 1] = name .. ":" .. id
+                    else catalog[name][#catalog[name] + 1] = id; nAdd = nAdd + 1 end
+                end
+            end
+        end
+        local v = computeDataVersion(catalog)
+        local note
+        if #collisions > 0 then
+            note = "  [FAIL] " .. #collisions .. " recette(s) déjà dans la base : " ..
+                   table.concat(collisions, ", "):sub(1, 90) .. " (positions décalées !)"
+            fail = true
+        else
+            note = "  [OK] append-only, positions de " .. cfg.base .. " intactes"
+        end
+        print(string.format("%-8s dataVersion=%-12d recettes=%d (%s %d + saison %d)%s",
+            season, v, nBase + nAdd, cfg.base, nBase, nAdd, note))
     end
 end
 

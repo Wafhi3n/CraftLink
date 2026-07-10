@@ -1,0 +1,14 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- Couche saisonnière « Saison de la Découverte » (seasonId 2) — GÉNÉRÉ par tools/gen_season.lua.
+         À inclure APRÈS Vanilla.xml : ces fichiers ÉTENDENT les métiers déjà enregistrés.
+         Chaque fichier est inerte hors de sa saison (garde CraftLink:ActiveSeason()). -->
+    <Script file="SoD\Alchemy.lua"/>
+    <Script file="SoD\Blacksmithing.lua"/>
+    <Script file="SoD\Cooking.lua"/>
+    <Script file="SoD\Enchanting.lua"/>
+    <Script file="SoD\Engineering.lua"/>
+    <Script file="SoD\FirstAid.lua"/>
+    <Script file="SoD\Leatherworking.lua"/>
+    <Script file="SoD\Mining.lua"/>
+    <Script file="SoD\Tailoring.lua"/>
+</Ui>
