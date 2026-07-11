@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 9
+local TRANSPORT_REV = 10   -- 10 : confinement royaume du trafic AddonMessage (anti-homonyme cross-royaume)
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -390,9 +390,14 @@ local function isTechChannelText(msg)
 end
 
 -- CHAT_MSG_ADDON : trafic addon (toutes portées) → dispatch par verbe (sauf soi-même).
+-- CONFINEMENT ROYAUME (même garde que le texte de canal) : `_Dispatch` strippe le suffixe « -Royaume » du
+-- sender (playerShort) → sans ça, un joueur d'un royaume NON connecté (croisé en zone cross-royaume) portant
+-- le MÊME nom qu'un de nos interlocuteurs devenait indiscernable de lui (sender==buyer) et pouvait ACK/CANCEL
+-- en son nom. Les royaumes CONNECTÉS partagent un espace de noms UNIQUE (aucun homonyme possible dedans) →
+-- on accepte royaume courant + connectés, on rejette le reste (avec qui on ne peut ni échanger ni courrier).
 local function onAddonMsg(me, ...)
     local prefix, message, distribution, sender = ...
-    if prefix == PREFIX and playerShort(sender) ~= me then
+    if prefix == PREFIX and playerShort(sender) ~= me and sameRealmGroup(sender) then
         lib:_Dispatch(sender, message, distribution)
     end
 end
