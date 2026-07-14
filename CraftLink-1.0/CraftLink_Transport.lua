@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 10   -- 10 : confinement royaume du trafic AddonMessage (anti-homonyme cross-royaume)
+local TRANSPORT_REV = 11   -- 11 : QueueText (enfilage canal-texte hors hardware event, anti ADDON_ACTION_BLOCKED au login)
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -276,9 +276,15 @@ end
 
 -- Envoi d'une ligne TEXTE sur le canal (balise CLNK1 découverte OU données CLD1) : garde canal +
 -- throttle par champ (`lastKey`) + pcall + trace. SendChatMessage est PROTÉGÉ hardware-event-only en
--- Classic Era → à n'appeler QUE sous input (clic/slash). Le `pcall` absorbe un ADDON_ACTION_BLOCKED
--- éventuel ; on le trace pour qu'un futur appelant hors-input se voie dans /co trace au lieu d'un échec
--- silencieux. Retourne true SEULEMENT si le message est réellement parti (ni throttlé, ni bloqué).
+-- Classic Era → à n'appeler QUE sous input (clic/slash).
+-- ⚠️ Le `pcall` N'ABSORBE PAS un ADDON_ACTION_BLOCKED : le blocage d'une fonction protégée n'est PAS
+-- une erreur Lua, c'est un ÉVÉNEMENT (ADDON_ACTION_BLOCKED) émis par la couche de protection du client
+-- APRÈS le retour normal de l'appel. `pcall` réussit donc (`ok == true`) et BugGrabber capture quand
+-- même le blocage → un appel hors input produit une popup d'erreur ET est faussement compté « parti ».
+-- CONSÉQUENCE : ne JAMAIS atteindre cette fonction hors hardware event. Les émetteurs hors input
+-- (login/OnNetworkReady, ticker) doivent passer par QueueText (file → drain au prochain input), pas par
+-- un envoi immédiat. Retourne true SEULEMENT si l'appel a été tenté (ni canal absent, ni throttlé) — ce
+-- qui, sous input, vaut « parti ».
 local function sendChannelLine(line, minInterval, lastKey)
     if not (SendChatMessage and lib._channelIndex) then return false end
     local t = (GetTime and GetTime()) or 0
@@ -301,18 +307,35 @@ end
 -- cf. Orders_Codec). L'envoi immédiat n'aboutit que sous hardware event, canal joint et hors throttle :
 -- sinon la ligne part en FILE et sera drainée au prochain clic/touche. L'appelant n'a donc plus à
 -- garantir le contexte d'input — il garantit seulement que la diffusion est VOULUE (cf. opts.channel).
-function lib:BroadcastText(payload)
-    if not (payload and payload ~= "") then return false end
-    if self._autoJoin == false then return false end   -- opt-out : ne rien émettre NI mettre en file
-    local line = DATA_TAG .. payload:gsub("|", "~")
-    if sendChannelLine(line, DATA_MIN_INTERVAL, "_lastData") then return true end
-    local q = self._textQueue
+-- Met une ligne déjà encodée en FILE canal-texte (drainée au prochain input). Facteur commun de
+-- BroadcastText (après échec d'envoi immédiat) et QueueText (enfilage direct, hors hardware event).
+local function enqueueText(line)
+    local q = lib._textQueue
     q[#q + 1] = { line = line, ts = (GetTime and GetTime()) or 0 }
     -- Plafond : on drope la PLUS ANCIENNE. Droper un NEW dont le CANCEL survit est inoffensif (le
     -- récepteur ignore un CANCEL sur un id inconnu) ; l'inverse laisserait une commande fantôme.
     while #q > DATA_QUEUE_MAX do table.remove(q, 1) end
     trace("send", "canal(texte) MIS EN FILE (" .. #q .. ") : " .. line:sub(1, 40))
+end
+
+function lib:BroadcastText(payload)
+    if not (payload and payload ~= "") then return false end
+    if self._autoJoin == false then return false end   -- opt-out : ne rien émettre NI mettre en file
+    local line = DATA_TAG .. payload:gsub("|", "~")
+    if sendChannelLine(line, DATA_MIN_INTERVAL, "_lastData") then return true end
+    enqueueText(line)
     return false
+end
+
+-- Comme BroadcastText mais SANS tentative d'envoi immédiat : à utiliser depuis un contexte HORS
+-- hardware event (login/OnNetworkReady, ticker de rafraîchissement) où un SendChatMessage déclencherait
+-- ADDON_ACTION_BLOCKED (cf. sendChannelLine : le pcall ne l'attrape pas). La ligne part au prochain
+-- clic/touche via _DrainText — seul créneau où l'envoi canal-texte est réellement autorisé.
+function lib:QueueText(payload)
+    if not (payload and payload ~= "") then return false end
+    if self._autoJoin == false then return false end   -- opt-out : ne rien mettre en file
+    enqueueText(DATA_TAG .. payload:gsub("|", "~"))
+    return true
 end
 
 -- Nombre de lignes canal en attente de drain (diagnostic : COCMonitor, /co trace).
