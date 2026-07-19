@@ -14,5 +14,7 @@
     <Script file="Wrath\Mining.lua"/>
     <Script file="Wrath\Tailoring.lua"/>
     <Script file="Gathering.lua"/>
+    <Script file="Smelting.lua"/>
     <Script file="Cooldowns.lua"/>
+    <Script file="Disenchant.lua"/>
 </Ui>

@@ -64,4 +64,11 @@ CraftLink:RegisterProfession("Poisons", {
 
     -- >>> gen_metadata.lua (généré — Wowhead classic ; ne pas éditer à la main)
     -- <<< gen_metadata.lua
+
+    -- >>> gen_skill_colors.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
+    -- (gris = rang où la recette ne rapporte plus de point)
+    skillColors = {
+    },
+    -- <<< gen_skill_colors.lua
 })

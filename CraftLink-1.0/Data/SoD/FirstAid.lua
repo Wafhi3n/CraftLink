@@ -29,4 +29,12 @@ CraftLink:ExtendProfession("First Aid", {
     taughtBy = {
         [232434] = 470349,
     },
+
+    -- >>> gen_skill_colors.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
+    -- (gris = rang où la recette ne rapporte plus de point)
+    skillColors = {
+        [470349] = { 0, 315, 327, 340 },
+    },
+    -- <<< gen_skill_colors.lua
 })

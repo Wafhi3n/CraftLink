@@ -59,4 +59,18 @@ CraftLink:ExtendProfession("Cooking", {
         [238649] = 1225762,
         [238650] = 1225763,
     },
+
+    -- >>> gen_skill_colors.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
+    -- (gris = rang où la recette ne rapporte plus de point)
+    skillColors = {
+        [470359] = { 0, 325, 345, 365 },
+        [470370] = { 0, 325, 345, 365 },
+        [1225758] = { 0, 260, 270, 280 },
+        [1225759] = { 0, 260, 270, 280 },
+        [1225760] = { 0, 260, 270, 280 },
+        [1225762] = { 0, 290, 300, 310 },
+        [1225763] = { 0, 290, 300, 310 },
+    },
+    -- <<< gen_skill_colors.lua
 })

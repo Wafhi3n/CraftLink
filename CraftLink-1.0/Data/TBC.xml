@@ -13,5 +13,7 @@
     <Script file="TBC\Mining.lua"/>
     <Script file="TBC\Tailoring.lua"/>
     <Script file="Gathering.lua"/>
+    <Script file="Smelting.lua"/>
     <Script file="Cooldowns.lua"/>
+    <Script file="Disenchant.lua"/>
 </Ui>

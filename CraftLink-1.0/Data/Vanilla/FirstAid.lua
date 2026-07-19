@@ -105,4 +105,24 @@ CraftLink:RegisterProfession("First Aid", {
         [19442] = 23787,
     },
     -- <<< gen_metadata.lua
+
+    -- >>> gen_skill_colors.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
+    -- (gris = rang où la recette ne rapporte plus de point)
+    skillColors = {
+        [3275] = { 1, 30, 45, 60 },
+        [3276] = { 40, 50, 75, 100 },
+        [3277] = { 80, 80, 115, 150 },
+        [3278] = { 115, 115, 150, 185 },
+        [7928] = { 150, 150, 180, 210 },
+        [7929] = { 180, 180, 210, 240 },
+        [7934] = { 80, 80, 115, 150 },
+        [7935] = { 130, 130, 165, 200 },
+        [10840] = { 210, 210, 240, 270 },
+        [10841] = { 240, 240, 270, 300 },
+        [18629] = { 260, 260, 290, 320 },
+        [18630] = { 290, 290, 320, 350 },
+        [23787] = { 300, 300, 330, 360 },
+    },
+    -- <<< gen_skill_colors.lua
 })

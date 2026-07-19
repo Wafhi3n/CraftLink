@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 9   -- v9 : couches saisonnières additives (ActiveSeason + ExtendProfession, Data/SoD) (v8 : cooldowns de recettes ; v7 : gardes anti-clobber compagnons + cache ProfessionCatalogue)
+local MAJOR, MINOR = "CraftLink-1.0", 12   -- v12 : deSources + DisenchantSource (table curatée du désenchantement, Data/Disenchant.lua) (v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -125,11 +125,21 @@ function lib:ExtendProfession(name, def)
             if not seen[id] then seen[id] = true; base.recipes[#base.recipes + 1] = id end
         end
     end
-    for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable" }) do
+    for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable", "skillColors" }) do
         local add = def[key]
         if type(add) == "table" then
             local dst = base[key]; if not dst then dst = {}; base[key] = dst end
             for k, v in pairs(add) do if dst[k] == nil then dst[k] = v end end
+        end
+    end
+    -- `enchants` est une LISTE ({id, name}, noms anglais canoniques), pas une map : append avec
+    -- dédup par id — même discipline « la base d'abord, jamais écrasée » que les tables ci-dessus.
+    if type(def.enchants) == "table" then
+        local dst = base.enchants; if not dst then dst = {}; base.enchants = dst end
+        local have = {}
+        for _, e in ipairs(dst) do if e.id then have[e.id] = true end end
+        for _, e in ipairs(def.enchants) do
+            if e.id and e.name and not have[e.id] then have[e.id] = true; dst[#dst + 1] = e end
         end
     end
     self._catalogDirty = true
@@ -184,6 +194,16 @@ function lib:RecipeLearnedAt(prof, spellID)
     return def and def.learnedAt and def.learnedAt[spellID] or nil
 end
 
+-- Seuils de difficulté RÉELS d'une recette : { orange, jaune, vert, gris } (gris = rang où elle
+-- ne rapporte plus de point), ou nil si hors base (donnée générée par tools/gen_skill_colors.lua,
+-- source Wowhead ; lacune connue : Poisons Vanilla). La couleur LIVE de l'API du jeu reste la
+-- référence pour une recette APPRISE au rang courant — ces seuils servent aux recettes MANQUANTES
+-- et à la prédiction de couleur à un rang futur (plan de route de montée de métier).
+function lib:RecipeColors(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.skillColors and def.skillColors[spellID] or nil
+end
+
 -- Durée (secondes) du cooldown d'une recette, ou nil si la recette n'a pas de mécanique de CD.
 -- L'API du jeu ne distingue pas « prête » de « sans CD » (GetTradeSkillCooldown rend nil pour
 -- les deux) : cette table curatée (Data/Cooldowns.lua, source Wowhead) est la référence.
@@ -221,6 +241,14 @@ end
 function lib:Conversions(prof)
     local def = self.professions[prof]
     return def and def.conversions or nil
+end
+
+-- Classe d'objets à DÉSENCHANTER pour obtenir un composant, ou nil : { q = qualité (2 vert /
+-- 3 bleu / 4 épique), lo, hi = tranche de NIVEAU D'OBJET (ilvl, ≠ niveau requis — l'afficher
+-- comme « niv. d'objet ») }. Table curatée Data/Disenchant.lua (ESTIMATION, source Wowpedia) —
+-- complémentaire de Conversions (ici la source est une classe d'objets, pas un objet précis).
+function lib:DisenchantSource(itemID)
+    return self.deSources and self.deSources[itemID] or nil
 end
 
 -- Items récoltés par un métier de récolte (Herbalism/Skinning/Fishing/Mining) : { itemID, ... } ou nil.

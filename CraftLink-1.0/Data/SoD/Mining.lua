@@ -26,4 +26,12 @@ CraftLink:ExtendProfession("Mining", {
     learnedAt = {
         [1213638] = 315,
     },
+
+    -- >>> gen_skill_colors.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
+    -- (gris = rang où la recette ne rapporte plus de point)
+    skillColors = {
+        [1213638] = { 0, 315, 322, 330 },
+    },
+    -- <<< gen_skill_colors.lua
 })

@@ -15,6 +15,10 @@
     <Script file="Vanilla\Tailoring.lua"/>
     <!-- Métiers de récolte (commande de matières) — chargé APRÈS (merge Mining). -->
     <Script file="Gathering.lua"/>
+    <!-- Fonte = facette craft du Minage — chargé APRÈS Gathering (append d'alias sur le Mining final). -->
+    <Script file="Smelting.lua"/>
     <!-- Recettes à cooldown (curaté) — chargé APRÈS (merge cooldowns/cdGroup). -->
     <Script file="Cooldowns.lua"/>
+    <!-- Table de désenchantement (curaté, toutes saveurs — IDs uniques par extension). -->
+    <Script file="Disenchant.lua"/>
 </Ui>
