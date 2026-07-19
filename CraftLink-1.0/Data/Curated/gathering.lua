@@ -19,7 +19,10 @@ return {
     Mining = {  -- minerais bruts (le métier Mining a aussi le smelting = recettes, à part)
         aliases = { "Mining", "Minage", "Bergbau", "Minería" },
         gathers = {
-            2770, 2771, 2772, 3858, 10620, 23424, 23425, 36909, 36910, 36912,
+            -- 2775/2776/7911/11370 (Argent/Or/Vrai-argent/Fer noir) + 23426/23427 (Khorium/Eternium,
+            -- TBC) : minerais RÉELS mais absents de prospecting.lua (non prospectables en gemmes)
+            -- → ajoutés à la main, sinon invisibles ici.
+            2770, 2771, 2772, 2775, 2776, 3858, 7911, 10620, 11370, 23424, 23425, 23426, 23427, 36909, 36910, 36912,
         },
     },
     Skinning = {

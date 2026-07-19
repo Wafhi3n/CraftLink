@@ -18,7 +18,7 @@ CraftLink:RegisterProfession("Herbalism", {
 CraftLink:RegisterProfession("Mining", {
     aliases = { "Mining", "Minage", "Bergbau", "Minería" },
     gathers = {
-        2770, 2771, 2772, 3858, 10620, 23424, 23425, 36909, 36910, 36912,
+        2770, 2771, 2772, 2775, 2776, 3858, 7911, 10620, 11370, 23424, 23425, 23426, 23427, 36909, 36910, 36912,
     },
 })
 
