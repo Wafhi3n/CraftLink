@@ -26,6 +26,14 @@ plus jamais être régénéré.
   ```
   Lacunes connues : Poisons Vanilla sans `learnedAt` (la page skill=40 n'expose pas le champ) ;
   les « plans non appariés » listés en sortie sont surtout du contenu hors-set (SoD, items `OLD`).
+- `gen_skill_colors.lua` — ajoute `skillColors` (spellID → `{orange, jaune, vert, gris}`, le gris =
+  rang où la recette ne rapporte plus de point) depuis le champ `"colors"` du Listview `spells`.
+  Même patron que gen_metadata : sentinelles propres (`-- >>> gen_skill_colors.lua`), restreint au
+  set `recipes`, ne touche jamais la dataVersion. Prend la saveur en argument (`Vanilla` par défaut,
+  `TBC`, `Wrath`, `SoD` — la couche SoD lit les pages `classic`). ⚠️ à relancer (SoD) après
+  `gen_season.lua`, qui régénère les fichiers de saison. Lacune connue : Poisons Vanilla (la page
+  skill=40 n'expose pas `colors`) → l'heuristique runtime prend le relais. Consommé par
+  `lib:RecipeColors(prof, spellID)` (lib v11).
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.
