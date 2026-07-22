@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 12   -- v12 : deSources + DisenchantSource (table curatée du désenchantement, Data/Disenchant.lua) (v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
+local MAJOR, MINOR = "CraftLink-1.0", 13   -- v13 : `names` (noms anglais canoniques des recettes à objet, Joaillerie TBC/Wrath) (v12 : deSources + DisenchantSource ; v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -26,7 +26,7 @@ lib.catalog     = lib.catalog or {}
 lib.dataVersion = lib.dataVersion or 0
 
 -- Données brutes par métier, enregistrées par les fichiers Data embarqués (RegisterProfession) :
--- [prof] = { aliases, sellable, disenchant, enchants, recipes, itemToSpell }. Le catalogue (index
+-- [prof] = { aliases, sellable, disenchant, enchants, names, recipes, itemToSpell }. Le catalogue (index
 -- de bits) en est dérivé paresseusement (EnsureCatalog) → la lib est self-contained, sans hôte.
 lib.professions    = lib.professions or {}
 lib._catalogDirty  = lib._catalogDirty or false
@@ -73,7 +73,7 @@ end
 
 -- Enregistre les données brutes d'un métier (appelé par les fichiers Data embarqués). Le
 -- catalogue est reconstruit paresseusement au prochain accès (EnsureCatalog). `def` =
--- { aliases, sellable, disenchant, enchants, recipes (triés), itemToSpell }.
+-- { aliases, sellable, disenchant, enchants, names, recipes (triés), itemToSpell }.
 -- MERGE des champs si le métier existe déjà (ex. Mining = recettes de fonte + `gathers` minerais,
 -- enregistrés par deux fichiers Data distincts). Sinon enregistrement direct. Idempotent.
 function lib:RegisterProfession(name, def)
@@ -132,14 +132,17 @@ function lib:ExtendProfession(name, def)
             for k, v in pairs(add) do if dst[k] == nil then dst[k] = v end end
         end
     end
-    -- `enchants` est une LISTE ({id, name}, noms anglais canoniques), pas une map : append avec
-    -- dédup par id — même discipline « la base d'abord, jamais écrasée » que les tables ci-dessus.
-    if type(def.enchants) == "table" then
-        local dst = base.enchants; if not dst then dst = {}; base.enchants = dst end
-        local have = {}
-        for _, e in ipairs(dst) do if e.id then have[e.id] = true end end
-        for _, e in ipairs(def.enchants) do
-            if e.id and e.name and not have[e.id] then have[e.id] = true; dst[#dst + 1] = e end
+    -- `enchants` (services sans objet) et `names` (recettes qui produisent un objet) sont des LISTES
+    -- ({id, name}, noms anglais canoniques), pas des maps : append avec dédup par id — même discipline
+    -- « la base d'abord, jamais écrasée » que les tables ci-dessus.
+    for _, key in ipairs({ "enchants", "names" }) do
+        if type(def[key]) == "table" then
+            local dst = base[key]; if not dst then dst = {}; base[key] = dst end
+            local have = {}
+            for _, e in ipairs(dst) do if e.id then have[e.id] = true end end
+            for _, e in ipairs(def[key]) do
+                if e.id and e.name and not have[e.id] then have[e.id] = true; dst[#dst + 1] = e end
+            end
         end
     end
     self._catalogDirty = true
