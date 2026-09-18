@@ -17,7 +17,7 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 13   -- v13 : `names` (noms anglais canoniques des recettes à objet, Joaillerie TBC/Wrath) (v12 : deSources + DisenchantSource ; v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
+local MAJOR, MINOR = "CraftLink-1.0", 15   -- v15 : codec registre par IDENTIFIANTS (RI|prof|payload) pour Camelot, sans catalogue ; (v14 : résolution de noms compatible MAINLINE (C_Item/C_Spell) pour WoW: Forever ; (v13 : `names` (noms anglais canoniques des recettes à objet, Joaillerie TBC/Wrath) (v12 : deSources + DisenchantSource ; v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
@@ -304,13 +304,21 @@ function lib:Professions()
 end
 
 -- Résolution de NOM multilingue : le client localise via GetItemInfo/GetSpellInfo ; repli baké.
+-- SAVEURS : sur un client MAINLINE (WoW: Forever / Camelot) ces globaux n'existent plus, ils
+-- vivent dans C_Item / C_Spell. La lib charge AVANT l'addon hôte : elle ne peut pas s'appuyer
+-- sur la couche de compat de COC et résout donc chez elle. On préfère la forme moderne quand
+-- elle existe (l'Era l'a aussi), l'ancienne sinon. GetSpellInfo rend un tuple en Classic et une
+-- table en Retail : on passe par GetSpellName, qui rend une chaîne des deux côtés.
 function lib:ItemName(itemID, fallback)
-    if itemID and GetItemInfo then local n = GetItemInfo(itemID); if n and n ~= "" then return n end end
+    local getItem = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if itemID and getItem then local n = getItem(itemID); if n and n ~= "" then return n end end
     return fallback or (itemID and ("item:" .. itemID)) or "?"
 end
 
 function lib:RecipeName(spellID, fallback)
-    if spellID and GetSpellInfo then local n = GetSpellInfo(spellID); if n and n ~= "" then return n end end
+    local getSpell = (C_Spell and C_Spell.GetSpellName)
+        or (GetSpellInfo and function(id) return (GetSpellInfo(id)) end)
+    if spellID and getSpell then local n = getSpell(spellID); if n and n ~= "" then return n end end
     return fallback or (spellID and ("spell:" .. spellID)) or "?"
 end
 

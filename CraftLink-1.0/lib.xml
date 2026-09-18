@@ -4,6 +4,7 @@
          modules (Professions, Recipes, Transport, Data/*) sans toucher aux .toc. -->
     <Script file="CraftLink-1.0.lua"/>
     <Script file="CraftLink_Registry.lua"/>
+    <Script file="CraftLink_RegistryIDs.lua"/>
     <Script file="CraftLink_Professions.lua"/>
     <Script file="CraftLink_Recipes.lua"/>
     <Script file="CraftLink_Cooldowns.lua"/>

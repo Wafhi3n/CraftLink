@@ -23,7 +23,9 @@ local have = {}
 for _, a in ipairs(def.aliases) do have[a:lower()] = true end
 
 local names = { "Smelting", "Fonte", "Schmelzkunst", "Fundición" }
-local live = GetSpellInfo and GetSpellInfo(2656)   -- nom localisé de la Fonte pour CE client
+-- Saveurs : GetSpellInfo (tuple, Classic) vs C_Spell.GetSpellName (chaîne, Mainline/Forever).
+local live = (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(2656))
+    or (GetSpellInfo and (GetSpellInfo(2656)))   -- nom localisé de la Fonte pour CE client
 if live then names[#names + 1] = live end
 
 for _, a in ipairs(names) do
