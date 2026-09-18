@@ -23,6 +23,12 @@ local FLAVORS = {
                 "FirstAid", "Jewelcrafting", "Leatherworking", "Mining", "Tailoring" },
     Wrath   = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting", "Engineering",
                 "FirstAid", "Inscription", "Jewelcrafting", "Leatherworking", "Mining", "Tailoring" },
+    -- Camelot (WoW: Forever) : saveur COMPLETE, pas une couche -- elle RETIRE des recettes en plus
+    -- d'en ajouter (les 6 potions de soin ont quitte l'Alchimie). Sa dataVersion differe donc de
+    -- Vanilla, et c'est VOULU : un client Forever et un client Era ne doivent jamais comparer leurs
+    -- bitfields. Pas de Poisons : Forever en a fait des sorts sans reactif.
+    Camelot = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting", "Engineering",
+                "FirstAid", "Leatherworking", "Mining", "Tailoring" },
 }
 
 -- Couches SAISONNIÈRES (Data/<Season>/, ExtendProfession) : appondues EN FIN du set de base.

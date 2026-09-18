@@ -39,6 +39,10 @@ local FLAVORS = {
                 "Mining", "Tailoring" } },
     SoD     = { domain = "classic", profs = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting",
                 "Engineering", "FirstAid", "Leatherworking", "Mining", "Tailoring" } },
+    -- Camelot = saveur COMPLETE (gen_flavor.lua), pages forever/. Pas de Poisons : Forever en a fait
+    -- des sorts sans reactif (verifie 2026-09-18), il n'y a donc aucune recette a colorer.
+    Camelot = { domain = "forever", profs = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting",
+                "Engineering", "FirstAid", "Leatherworking", "Mining", "Tailoring" } },
 }
 
 local MARK_OPEN  = "    -- >>> gen_skill_colors.lua"

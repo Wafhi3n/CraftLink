@@ -1,0 +1,18 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- Données de recettes « WoW: Forever (Camelot) » — GÉNÉRÉ par tools/gen_flavor.lua.
+         Set COMPLET (RegisterProfession) : REMPLACE Vanilla.xml, ne s'y ajoute pas.
+         Inclus par le .toc flavor _Camelot de chaque addon hôte, à la place du XML de base. -->
+    <Script file="Camelot\Alchemy.lua"/>
+    <Script file="Camelot\Blacksmithing.lua"/>
+    <Script file="Camelot\Cooking.lua"/>
+    <Script file="Camelot\Enchanting.lua"/>
+    <Script file="Camelot\Engineering.lua"/>
+    <Script file="Camelot\FirstAid.lua"/>
+    <Script file="Camelot\Leatherworking.lua"/>
+    <Script file="Camelot\Mining.lua"/>
+    <Script file="Camelot\Tailoring.lua"/>
+    <Script file="Gathering.lua"/>
+    <Script file="Smelting.lua"/>
+    <Script file="Cooldowns.lua"/>
+    <Script file="Disenchant.lua"/>
+</Ui>
