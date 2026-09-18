@@ -232,12 +232,112 @@ local name = arg and arg[1] or "Camelot"
 local cfg  = FLAVORS[name] or error("saveur inconnue : " .. tostring(name))
 cfg.name = name
 
--- Sous-ensemble de métiers en arguments (pilote), sinon toute la config.
-local only = {}
-for i = 2, (arg and #arg or 0) do if arg[i] ~= "-fetch" then only[arg[i]] = true end end
+-- Drapeaux et sous-ensemble de métiers (pilote), sinon toute la config.
+local flags, only = {}, {}
+for i = 2, (arg and #arg or 0) do
+    local a = arg[i]
+    if a:sub(1, 1) == "-" then flags[a] = true else only[a] = true end
+end
 local subset = next(only) ~= nil
 
-if arg and arg[2] == "-fetch" then
+-- Recettes déjà COMMITÉES pour cette saveur (le set de référence du mode -check).
+local function committedRecipes(profFile)
+    local c = read(DATA_ROOT .. name .. [[\]] .. profFile .. ".lua")
+    if not c then return nil end
+    local block = c:match("recipes%s*=%s*(%b{})")
+    if not block then return nil end
+    local set, n = {}, 0
+    for id in block:gmatch("%d+") do
+        local v = tonumber(id)
+        if not set[v] then set[v] = true; n = n + 1 end
+    end
+    return set, n
+end
+
+-- Mode -check : compare le cache HTML au set COMMITÉ, et n'écrit RIEN.
+--
+-- Pensé pour tourner souvent : le jeu est en bêta (niveau plafonné à 30 jusqu'au 4 novembre 2026) et
+-- la base Wowhead se remplit par OBSERVATION des joueurs — Blizzard offusque les données client, donc
+-- rien n'y arrive par datamining. Conséquence directe sur la sûreté, et c'est TOUTE la règle de ce
+-- mode : une recette qui DISPARAÎT d'une page est presque toujours un trou de collecte, une page
+-- tronquée ou un fetch raté — pas un vrai retrait. Une perte ne doit donc JAMAIS s'appliquer toute
+-- seule : elle retirerait des recettes réelles de l'addon des joueurs sur la foi d'une page incomplète.
+-- Les ajouts, eux, sont le cas normal pendant la bêta : on les signale, on ne s'en alarme pas.
+--
+-- Codes de sortie, pour qu'un job puisse trancher sans lire la sortie :
+--   0 = identique     2 = ajouts seuls (dérive à appliquer)     1 = PERTE ou cache manquant (humain)
+local function runCheck()
+    local drift, lost, broken = 0, 0, 0
+    for _, prof in ipairs(cfg.profs) do
+        local f = prof.file
+        if not (subset and not only[f]) then
+            local html = read(WH_DIR .. cfg.domain .. "_" .. f .. ".html")
+            local have, nHave = committedRecipes(f)
+            local live, nLive = nil, 0
+            if html then live, nLive = parseAll(html) end
+            if not html then
+                print(string.format("  [CACHE ABSENT] %-16s %s%s_%s.html", f, WH_DIR, cfg.domain, f))
+                broken = broken + 1
+            elseif not have and nLive == 0 then
+                -- Absent des DEUX côtés : état stable et voulu, pas une panne. C'est le cas de Poisons,
+                -- dont Forever a fait des sorts SANS réactif — il n'y a aucune recette à modéliser.
+                -- Le compter en échec ferait échouer CHAQUE passage, et un contrôle qui crie au loup
+                -- à tous les coups finit par n'être plus lu.
+                print(string.format("  [sans recette] %-16s ni sur la page, ni commité (attendu)", f))
+            elseif not have then
+                -- La page en a, nous pas : un métier apparaît. C'est de la dérive à appliquer, pas une
+                -- erreur — typiquement un métier que Wowhead vient de commencer à documenter.
+                print(string.format("  [NOUVEAU]      %-16s %d recette(s) sur la page, aucun set commité", f, nLive))
+                drift = drift + nLive
+            else
+                local add, del = 0, 0
+                for id in pairs(live) do if not have[id] then add = add + 1 end end
+                for id in pairs(have) do if not live[id] then del = del + 1 end end
+                if del > 0 then
+                    print(string.format("  [PERTE]        %-16s commitées=%-5d ajouts=%-4d PERTES=%d",
+                        f, nHave, add, del))
+                    lost = lost + del
+                elseif add > 0 then
+                    print(string.format("  [ajouts]       %-16s commitées=%-5d ajouts=%d", f, nHave, add))
+                    drift = drift + add
+                else
+                    print(string.format("  [identique]    %-16s commitées=%d", f, nHave))
+                end
+            end
+        end
+    end
+    print()
+    if broken > 0 or lost > 0 then
+        print(string.format("ÉCHEC : %d perte(s) de recette, %d problème(s) de cache. RIEN n'a été écrit.", lost, broken))
+        print("Une perte vient presque toujours d'une page incomplète : refaire le fetch AVANT de conclure.")
+        os.exit(1)
+    elseif drift > 0 then
+        print(string.format("DÉRIVE : %d recette(s) en plus sur Wowhead. Relancer sans -check pour les appliquer.", drift))
+        os.exit(2)
+    end
+    print("Aucune dérive : le set commité correspond au cache.")
+    os.exit(0)
+end
+
+if flags["-check"] then
+    print("Contrôle de dérive — saveur " .. name .. " (domaine " .. cfg.domain .. "/), aucune écriture :")
+    runCheck()
+end
+
+-- `-urls` : une ligne « <fichier de cache><TAB><url> » par métier, pour qu'un script enveloppe le
+-- téléchargement sans RE-DÉCLARER la liste des métiers de son côté. Deux listes finissent toujours
+-- par diverger, et celle qui se tait est la pire (cf. bump_version.ps1 et sa liste de .toc en dur).
+if flags["-urls"] then
+    for _, p in ipairs(cfg.profs) do
+        if not (subset and not only[p.file]) then
+            print(string.format("%s%s_%s.html	https://www.wowhead.com/%s/skill=%d/%s",
+                WH_DIR, cfg.domain, p.file, cfg.domain, p.skill, p.slug))
+        end
+    end
+    return
+end
+
+if flags["-fetch"] then
     print("# Cache HTML Wowhead pour la saveur " .. name .. " (cwd = CraftLink) :")
     for _, p in ipairs(cfg.profs) do
         print(string.format('curl -s -A "Mozilla/5.0" "https://www.wowhead.com/%s/skill=%d/%s" -o "%s%s_%s.html"',

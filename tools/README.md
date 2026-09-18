@@ -37,6 +37,14 @@ plus jamais être régénéré.
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.
+- `gen_flavor.lua` — génère un set COMPLET de saveur (`RegisterProfession`) : `Data/<Saveur>/*.lua`
+  + `Data/<Saveur>.xml`. À utiliser quand la saveur **retire** des recettes et pas seulement en
+  ajoute — une couche (`gen_season.lua`) ne sait que appondre. Modes : `-check` (contrôle de dérive,
+  n'écrit rien, échoue sur toute PERTE), `-urls` / `-fetch` (liste des pages à télécharger). Un
+  sous-ensemble de métiers en arguments n'écrit délibérément PAS le XML (il listerait un set partiel).
+- `refresh_flavor.ps1` — enveloppe la boucle : fetch (curl.exe, avec refus d'un téléchargement
+  invalide pour ne pas écraser un bon cache) → `-check` → application seulement sur `-Apply` et
+  seulement si la dérive est saine. Ne redéclare PAS la liste des métiers : elle vient de `-urls`.
 - `gen_wowhead.lua` — enrichissement historique `produces`/`reagents` (fait sur les 3 saveurs).
   APPEND sans remplacement → garde intégrée : SKIP si `produces` déjà présent. Pour de nouvelles
   métadonnées, passer par `gen_metadata.lua`.
@@ -94,13 +102,44 @@ inclus par le `.toc` correspondant de chaque addon hôte.
 | TBC | générée (gen_flavor, outil perdu) + enrichie | Wowhead `tbc` | `1073594610` |
 | Wrath | générée (gen_flavor, outil perdu) + enrichie | Wowhead `wotlk` | `362977519` |
 | SoD | **couche additive** sur Vanilla (`gen_season.lua`) | Wowhead `classic` + `seasonId:2` | `892995836` (Vanilla+304) |
+| Camelot (Forever) | **saveur complète** (`gen_flavor.lua`) | Wowhead `forever` | `1908807446` (2512 rec.) |
 
 Clé canonique du Secourisme : `"First Aid"` (avec espace) sur TOUTES les saveurs (TBC/Wrath
-enregistraient `"FirstAid"`, corrigé 2026-07-02). L'outil de génération complète des saveurs
-(`gen_flavor.lua`) a été perdu — à réécrire depuis la structure ci-dessus si on régénère TBC/Wrath
-(garder `check_dataversion.lua` comme filet).
+enregistraient `"FirstAid"`, corrigé 2026-07-02). L'outil de génération complète des saveurs (`gen_flavor.lua`) avait été
+**perdu** ; il a été **réécrit le 2026-09-18** pour Camelot et sert de nouveau à régénérer n'importe
+quelle saveur complète (garder `check_dataversion.lua` comme filet).
 
-## Couches SAISONNIÈRES (`gen_season.lua`) — SoD aujourd'hui, Camelot demain
+## SAVEUR complète (`gen_flavor.lua`) — Camelot / WoW: Forever
+
+Une saveur **remplace** le set de base (`RegisterProfession`), là où une saison s'y ajoute. Camelot a
+eu besoin de ça et pas d'une couche, pour une raison mesurée le 2026-09-18 : Forever ne fait pas
+qu'ajouter, il **retire**. Les six potions de soin ont quitté l'Alchimie (sorts 2330, 2337, 3447,
+7181, 11457, 17556) pour Premiers soins sous de nouveaux sorts, et six recettes ont quitté la Forge
+pour le Travail du cuir. `ExtendProfession` est append-only par construction : il aurait laissé des
+recettes fantômes, commandables, pointant sur des sorts disparus. `gen_season.lua` ne s'appliquait
+de toute façon pas — il filtre sur un tag `"seasonId"` dont les pages `forever/` ne portent **aucune**
+occurrence : sur une page de saveur, toute la page EST la saveur.
+
+Pas de garde runtime : c'est le `.toc` `_Camelot` qui inclut `Data/Camelot.xml` à la place de
+`Vanilla.xml`. `C_Seasons` n'existe d'ailleurs pas sur Forever. Poisons est absent du set : Forever
+en a fait des sorts **sans réactif**, il n'y a aucune recette à modéliser.
+
+```powershell
+# Boucle complète (fetch -> contrôle -> application), cwd = CraftLink :
+.	oolsefresh_flavor.ps1              # télécharge et SIGNALE la dérive, n'écrit aucune donnée
+.	oolsefresh_flavor.ps1 -Apply       # applique, mais SEULEMENT si la dérive est saine
+.	oolsefresh_flavor.ps1 -SkipFetch   # contrôle sur le cache déjà présent
+```
+
+⚠️ **À relancer souvent, et à ne jamais automatiser jusqu'à la fusion.** Forever est en bêta (niveau
+plafonné à 30 jusqu'au 4 novembre 2026) et Blizzard **offusque les données client** : la base Wowhead
+ne vient pas du datamining, elle se remplit par OBSERVATION des joueurs. Une recette qui disparaît
+d'une page est donc presque toujours un trou de collecte, pas un vrai retrait — d'où le mode
+`-check`, qui **échoue sur toute perte** (code 1), signale les ajouts (code 2) et se tait sinon
+(code 0). Et rappel de fond : ces données ne sont pas que des données, les positions dans `recipes`
+sont les **bitfields du registre** échangés entre clients. Rien ne doit se fusionner sans relecture.
+
+## Couches SAISONNIÈRES (`gen_season.lua`) — SoD
 
 Une saison **ajoute** des recettes à un set de base au lieu de le remplacer. `gen_season.lua` écrit
 `Data/<Season>/<Métier>.lua` (+ `Data/<Season>.xml`) ; chaque fichier appelle
