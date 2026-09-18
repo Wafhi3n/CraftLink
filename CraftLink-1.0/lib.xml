@@ -8,5 +8,6 @@
     <Script file="CraftLink_Professions.lua"/>
     <Script file="CraftLink_Recipes.lua"/>
     <Script file="CraftLink_Cooldowns.lua"/>
+    <Script file="CraftLink_TextQueue.lua"/>
     <Script file="CraftLink_Transport.lua"/>
 </Ui>

@@ -32,7 +32,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 11   -- 11 : QueueText (enfilage canal-texte hors hardware event, anti ADDON_ACTION_BLOCKED au login)
+local TRANSPORT_REV = 12   -- 12 : file canal-texte extraite (CraftLink_TextQueue) + QueueBeacon (balise d'ARRIVÉE enfilée au login)
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -58,12 +58,9 @@ local BEACON_MIN_INTERVAL = 30         -- s : plancher dur entre 2 balises (anti
 local DATA_TAG          = "CLD1 "      -- préfixe des messages de DONNÉES (espace inclus = séparateur)
 local DATA_MIN_INTERVAL = 1            -- s : plancher léger anti-accident (le posting est déjà rare)
 
--- File d'envoi des DONNÉES canal (pas de la balise : une balise throttlée doit être PERDUE, la rejouer
--- plus tard ne vaut rien et floode). SendChatMessage exige un hardware event ; un envoi émis hors input
--- (slash, canal pas encore joint, 2 posts dans la même seconde) était perdu SANS REPRISE. On garde la
--- ligne et on la draine au prochain clic/touche (pattern Deathlog). FIFO = un NEW part avant son CANCEL.
-local DATA_QUEUE_MAX = 24              -- plafond ; au-delà on drope la PLUS ANCIENNE
-local DATA_QUEUE_TTL = 120             -- s : au-delà la ligne n'a plus d'intérêt sur le canal
+-- La MÉCANIQUE de file (enfilage, plafond, TTL, drain à l'input) vit dans CraftLink_TextQueue. Ici on
+-- ne garde que ce qui relève du FORMAT DE FIL : les préfixes et le throttle propre à chaque genre de
+-- ligne, passés à `_EnqueueText`.
 
 lib._handlers    = lib._handlers    or {}   -- [verb] = { fn(sender, payload, distribution), ... }
 lib._presenceCb  = lib._presenceCb  or nil  -- fn("join"|"leave", playerShort)
@@ -73,7 +70,6 @@ lib._sendBusy    = lib._sendBusy    or false
 lib._beaconCb    = lib._beaconCb    or nil   -- fn(senderShort, payload) sur balise texte reçue
 lib._lastBeacon  = lib._lastBeacon  or 0
 lib._lastData    = lib._lastData    or 0     -- throttle des broadcasts DONNÉES canal-texte
-lib._textQueue   = lib._textQueue   or {}    -- { { line = <ligne CLD1 encodée>, ts = GetTime() }, ... }
 
 -- ------------------------------------------------------------------
 -- Trace (optionnelle) : le produit branche un tracer ; la lib reste agnostique.
@@ -296,10 +292,34 @@ local function sendChannelLine(line, minInterval, lastKey)
     return ok
 end
 
+-- Le drain de la file vit dans CraftLink_TextQueue : il lui faut ce chemin d'envoi, resté local ici
+-- (c'est Transport qui possède le canal et son throttle). Seam interne, pas une API produit.
+function lib:_SendChannelLine(line, minInterval, lastKey)
+    return sendChannelLine(line, minInterval or DATA_MIN_INTERVAL, lastKey or "_lastData")
+end
+
 -- Balise TEXTE de découverte (le NOM de l'émetteur, porté par l'event, suffit → `extra` optionnel/court).
 -- Masquée du chat par le filtre. Throttlée dur (anti-flood ; SendChatMessage subit l'anti-spam serveur).
 function lib:SendBeacon(extra)
     return sendChannelLine(BEACON_TAG .. (extra and (" " .. extra) or ""), BEACON_MIN_INTERVAL, "_lastBeacon")
+end
+
+-- Balise d'ARRIVÉE : la même ligne, mais ENFILÉE au lieu d'être émise. À appeler depuis le bring-up
+-- (`OnNetworkReady`), où il n'y a par construction aucun hardware event : elle partira au premier clic
+-- ou à la première touche du joueur, donc quelques secondes après son login, sans qu'il ait rien à faire.
+-- C'EST le correctif du défaut « un nouvel installé reste invisible » (cf. l'en-tête de TextQueue).
+-- Trois choix, chacun pour une raison précise :
+--   * `kind` → UNE SEULE balise en file : le watchdog re-déclenche OnNetworkReady à chaque
+--     ré-acquisition du canal, et rien ne justifie d'en empiler.
+--   * `ttl = false` → elle n'expire pas. Une donnée périmée ment (un ordre a pu être annulé depuis) ;
+--     « je suis là » reste VRAI tant que le joueur est connecté. Rien ne la rejouera, donc on la garde.
+--   * `sticky` → enfilée au login, elle est la PLUS ANCIENNE : sans exception, le plafond de file la
+--     sacrifierait la première, au profit de lignes de données.
+function lib:QueueBeacon(extra)
+    if self._autoJoin == false then return false end   -- opt-out : ne rien mettre en file
+    return self:_EnqueueText(BEACON_TAG .. (extra and (" " .. extra) or ""),
+        { minInterval = BEACON_MIN_INTERVAL, lastKey = "_lastBeacon",
+          kind = "beacon", ttl = false, sticky = true })
 end
 
 -- Diffuse un message CraftLink (ex. « ORD|NEW|… ») en TEXTE de canal → portée ROYAUME réelle, en
@@ -307,23 +327,15 @@ end
 -- cf. Orders_Codec). L'envoi immédiat n'aboutit que sous hardware event, canal joint et hors throttle :
 -- sinon la ligne part en FILE et sera drainée au prochain clic/touche. L'appelant n'a donc plus à
 -- garantir le contexte d'input — il garantit seulement que la diffusion est VOULUE (cf. opts.channel).
--- Met une ligne déjà encodée en FILE canal-texte (drainée au prochain input). Facteur commun de
--- BroadcastText (après échec d'envoi immédiat) et QueueText (enfilage direct, hors hardware event).
-local function enqueueText(line)
-    local q = lib._textQueue
-    q[#q + 1] = { line = line, ts = (GetTime and GetTime()) or 0 }
-    -- Plafond : on drope la PLUS ANCIENNE. Droper un NEW dont le CANCEL survit est inoffensif (le
-    -- récepteur ignore un CANCEL sur un id inconnu) ; l'inverse laisserait une commande fantôme.
-    while #q > DATA_QUEUE_MAX do table.remove(q, 1) end
-    trace("send", "canal(texte) MIS EN FILE (" .. #q .. ") : " .. line:sub(1, 40))
-end
+-- Throttle des lignes de DONNÉES, passé à la file : elle mêle des genres qui n'ont pas la même cadence.
+local DATA_OPTS = { minInterval = DATA_MIN_INTERVAL, lastKey = "_lastData" }
 
 function lib:BroadcastText(payload)
     if not (payload and payload ~= "") then return false end
     if self._autoJoin == false then return false end   -- opt-out : ne rien émettre NI mettre en file
     local line = DATA_TAG .. payload:gsub("|", "~")
     if sendChannelLine(line, DATA_MIN_INTERVAL, "_lastData") then return true end
-    enqueueText(line)
+    self:_EnqueueText(line, DATA_OPTS)
     return false
 end
 
@@ -334,50 +346,11 @@ end
 function lib:QueueText(payload)
     if not (payload and payload ~= "") then return false end
     if self._autoJoin == false then return false end   -- opt-out : ne rien mettre en file
-    enqueueText(DATA_TAG .. payload:gsub("|", "~"))
-    return true
+    return self:_EnqueueText(DATA_TAG .. payload:gsub("|", "~"), DATA_OPTS) and true or false
 end
 
--- Nombre de lignes canal en attente de drain (diagnostic : COCMonitor, /co trace).
-function lib:PendingTextCount() return #self._textQueue end
-
--- Draine UNE ligne par événement d'input (hardware event → SendChatMessage autorisé). CHEMIN CHAUD :
--- appelé à chaque clic dans le monde et à chaque touche → la garde sur file vide est la 1re instruction.
--- Échec d'envoi (throttle, canal perdu, blocage) → l'entrée reste en tête, retentée au prochain input.
-function lib:_DrainText()
-    local q = self._textQueue
-    if #q == 0 then return end
-    if sendChannelLine(q[1].line, DATA_MIN_INTERVAL, "_lastData") then table.remove(q, 1) end
-end
-
--- Purge des lignes périmées (appelée par le watchdog, pas par le drain : garde le chemin chaud minimal).
--- FIFO → les plus vieilles sont en tête : on s'arrête à la 1re fraîche.
-function lib:_TrimTextQueue()
-    local q, now = self._textQueue, (GetTime and GetTime()) or 0
-    while #q > 0 and (now - q[1].ts) >= DATA_QUEUE_TTL do
-        trace("send", "canal(texte) PÉRIMÉ, abandon : " .. q[1].line:sub(1, 40))
-        table.remove(q, 1)
-    end
-end
-
--- Hooks d'input : un clic monde OU une touche = hardware event → on draine une ligne. Deux points
--- non-évidents, vérifiés en jeu :
---   * `EnableKeyboard(true)` est REQUIS, sinon le frame ne reçoit jamais OnKeyDown (le drain ne se
---     faisait qu'au clic — angle mort partagé par Deathlog, qui l'omet aussi).
---   * `SetPropagateKeyboardInput(true)` est IMPÉRATIF avec le clavier activé : sans lui le frame
---     AVALE les touches (chat, raccourcis d'action). Avec, la touche est rejouée telle quelle.
-local function installInputDrain()
-    if lib._inputDrainInstalled then return end
-    lib._inputDrainInstalled = true
-    local function drain() lib:_DrainText() end
-    if WorldFrame and WorldFrame.HookScript then WorldFrame:HookScript("OnMouseDown", drain) end
-    if CreateFrame then
-        local kf = CreateFrame("Frame", "CraftLinkInputDrainFrame", UIParent)
-        if kf.EnableKeyboard then kf:EnableKeyboard(true) end
-        if kf.SetPropagateKeyboardInput then kf:SetPropagateKeyboardInput(true) end
-        kf:SetScript("OnKeyDown", drain)
-    end
-end
+-- La file canal-texte (enfilage, plafond, TTL, drain sous input) vit dans CraftLink_TextQueue :
+-- `PendingTextCount`, `_DrainText`, `_TrimTextQueue` et `_InstallInputDrain` y sont définis.
 
 -- ------------------------------------------------------------------
 -- Réception : dispatch par verbe
@@ -487,7 +460,7 @@ function lib:StartTransport()
         else onPresenceEvent(event, ...) end
     end)
     installBeaconFilter()
-    installInputDrain()
+    lib:_InstallInputDrain()
 
     self:JoinNetwork()
     if C_Timer and C_Timer.NewTicker then
