@@ -99,6 +99,15 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: generation echouee." -ForegroundC
 & $Lua "tools\gen_skill_colors.lua" $Flavor
 if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: seuils de difficulte echoues." -ForegroundColor Red; exit 1 }
 
+# Les noms ANGLAIS canoniques des enchants, effaces eux aussi par la regeneration ci-dessus : le
+# bloc sentinelle vit DANS Data/Camelot/Enchanting.lua, que gen_flavor.lua reecrit de zero. Sans
+# ce rattrapage, le classement par emplacement de COC retombe sur le nom LOCALISE du client et
+# tous les enchants finissent en "Autres" sur un client non anglais (vu en jeu le 2026-07-16 sur
+# SoD). Meme raison d'etre que la ligne au-dessus, meme discipline : un generateur qui ecrit dans
+# un fichier regenerable doit etre rejoue juste apres la regeneration.
+& $Lua "tools\gen_enchant_names.lua" $Flavor
+if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: noms canoniques d'enchants echoues." -ForegroundColor Red; exit 1 }
+
 & $Lua "tools\check_dataversion.lua"
 
 Write-Host "`nApplique. Reste a faire, dans l'ordre :" -ForegroundColor Green

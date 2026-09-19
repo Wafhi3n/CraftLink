@@ -21,14 +21,20 @@
 --   lua tools\gen_enchant_names.lua TBC     # domaine tbc
 --   lua tools\gen_enchant_names.lua Wrath   # domaine wotlk
 --   lua tools\gen_enchant_names.lua SoD     # domaine classic (le set recipes du fichier SoD filtre)
+--   lua tools\gen_enchant_names.lua Camelot # domaine forever (relancé par refresh_flavor.ps1 -Apply)
 
 local DATA_ROOT = [[CraftLink-1.0\Data\]]
 local WH_DIR    = [[tools\wh\]]
 
 local FLAVORS = {
-    TBC   = { domain = "tbc" },
-    Wrath = { domain = "wotlk" },
-    SoD   = { domain = "classic" },
+    TBC     = { domain = "tbc" },
+    Wrath   = { domain = "wotlk" },
+    SoD     = { domain = "classic" },
+    -- Camelot est une saveur COMPLÈTE : gen_flavor.lua RÉÉCRIT Data/Camelot/*.lua de zéro, et
+    -- efface donc ce bloc à chaque application. C'est pourquoi refresh_flavor.ps1 -Apply relance cet
+    -- outil juste APRÈS la génération, exactement comme il le fait déjà pour gen_skill_colors.lua.
+    -- Oublier ce branchement reperdrait les noms au premier refresh, sans le moindre bruit.
+    Camelot = { domain = "forever" },
 }
 
 local MARK_OPEN  = "    -- >>> gen_enchant_names.lua"
@@ -100,8 +106,8 @@ local function upsertUnit(content, unit)
     return content:sub(1, -3) .. "\n" .. unit .. "\n})\n"
 end
 
-local flavor = arg and arg[1] or error("saveur requise : TBC | Wrath | SoD")
-local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor) .. " (TBC|Wrath|SoD)")
+local flavor = arg and arg[1] or error("saveur requise : TBC | Wrath | SoD | Camelot")
+local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor) .. " (TBC|Wrath|SoD|Camelot)")
 
 local path    = DATA_ROOT .. flavor .. [[\Enchanting.lua]]
 local content = assert(readFile(path), "fichier data absent : " .. path)
