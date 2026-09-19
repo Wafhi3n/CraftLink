@@ -13,7 +13,7 @@ if not lib then return end
 
 -- Anti-clobber (même logique que CraftLink_Recipes) : compagnon re-patché hors du gate
 -- LibStub. BUMP à chaque évolution du codec CD (+ resync hôtes).
-local COOLDOWNS_REV = 1
+local COOLDOWNS_REV = 2   -- 2 : lecture des CD sur la fenêtre métier MAINLINE
 if (lib._cooldownsRev or 0) >= COOLDOWNS_REV then return end
 lib._cooldownsRev = COOLDOWNS_REV
 
@@ -74,11 +74,29 @@ end
 -- client TBC — gated : en Vanilla l'Enchantement n'a de toute façon aucune recette à CD.
 function lib:ReadOpenCooldowns()
     if not self.OpenProfession then return nil, nil end   -- compagnon Recipes absent (lib partielle)
-    local prof, isCraft = self:OpenProfession()
+    local prof, isCraft, isModern = self:OpenProfession()
     if not prof then return nil, nil end
     local cds = self:CooldownRecipes(prof)
     if not cds then return prof, nil end
     local out = {}
+    -- MAINLINE (WoW: Forever) : même angle mort que ReadOpenKnown — `GetNumTradeSkills` n'existe pas,
+    -- la boucle Classic tournait donc zéro fois et rendait un jeu VIDE, sans erreur : aucun cooldown
+    -- n'était jamais capturé ni diffusé sur la cible du projet. Ici un recipeID EST un spellID, et
+    -- `C_TradeSkillUI.GetRecipeCooldown` rend le restant (nil = pas de CD en cours ⇒ prête = 0).
+    if isModern then
+        local c = C_TradeSkillUI
+        local get = c and (c.GetAllRecipeIDs or c.GetFilteredRecipeIDs)
+        if not (get and c.GetRecipeCooldown) then return prof, nil end
+        local ok, list = pcall(get)
+        if not (ok and type(list) == "table") then return prof, nil end
+        for _, sid in ipairs(list) do
+            if cds[sid] then
+                local ok2, remain = pcall(c.GetRecipeCooldown, sid)
+                out[sid] = (ok2 and tonumber(remain)) or 0
+            end
+        end
+        return prof, out
+    end
     if isCraft then
         if not GetCraftCooldown then return prof, nil end
         local n = (GetNumCrafts and GetNumCrafts()) or 0
