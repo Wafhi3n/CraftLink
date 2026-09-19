@@ -42,6 +42,10 @@ local WH_DIR    = [[tools\wh\]]
 -- devrait donc être rejoué après chaque application, et un oubli le perdrait en silence.
 local CURATED_DE = [[tools\Curated\disenchant.lua]]
 
+-- Comparaison au niveau des CHAMPS pour -check (objet créé, niveau d'apprentissage) : module pur, testé
+-- à part (tests/test_flavor_drift.lua) — cet outil termine par os.exit et ne se charge pas en harnais.
+local Drift = dofile([[tools\flavor_drift.lua]])
+
 local FLAVORS = {
     Camelot = {
         domain = "forever", base = "Vanilla",
@@ -279,7 +283,7 @@ local function committedRecipes(profFile)
         local v = tonumber(id)
         if not set[v] then set[v] = true; n = n + 1 end
     end
-    return set, n
+    return set, n, c   -- le contenu sert aussi à comparer les CHAMPS (tools/flavor_drift.lua)
 end
 
 -- Mode -check : compare le cache HTML au set COMMITÉ, et n'écrit RIEN.
@@ -293,54 +297,68 @@ end
 -- Les ajouts, eux, sont le cas normal pendant la bêta : on les signale, on ne s'en alarme pas.
 --
 -- Codes de sortie, pour qu'un job puisse trancher sans lire la sortie :
---   0 = identique     2 = ajouts seuls (dérive à appliquer)     1 = PERTE ou cache manquant (humain)
+--   0 = identique
+--   2 = ajouts seuls (dérive à appliquer) : recettes NOUVELLES, ou champs COMPLÉTÉS sur des recettes
+--       déjà commitées (objet créé, niveau d'apprentissage — cf. tools/flavor_drift.lua)
+--   1 = PERTE (recette disparue, champ disparu ou changé) ou cache manquant : un humain tranche
+--
+-- Un métier : imprime sa ligne, rend (dérive, pertes, cache cassé 0/1). Extrait de runCheck pour tenir
+-- sous le plafond de 60 lignes/fonction de l'écosystème.
+local function checkProf(f)
+    local html = read(WH_DIR .. cfg.domain .. "_" .. f .. ".html")
+    local have, nHave, content = committedRecipes(f)
+    local live, nLive = nil, 0
+    if html then live, nLive = parseAll(html) end
+    if not html then
+        print(string.format("  [CACHE ABSENT] %-16s %s%s_%s.html", f, WH_DIR, cfg.domain, f))
+        return 0, 0, 1
+    elseif not have and nLive == 0 then
+        -- Absent des DEUX côtés : état stable et voulu, pas une panne. C'est le cas de Poisons,
+        -- dont Forever a fait des sorts SANS réactif — il n'y a aucune recette à modéliser.
+        -- Le compter en échec ferait échouer CHAQUE passage, et un contrôle qui crie au loup
+        -- à tous les coups finit par n'être plus lu.
+        print(string.format("  [sans recette] %-16s ni sur la page, ni commité (attendu)", f))
+        return 0, 0, 0
+    elseif not have then
+        -- La page en a, nous pas : un métier apparaît. C'est de la dérive à appliquer, pas une
+        -- erreur — typiquement un métier que Wowhead vient de commencer à documenter.
+        print(string.format("  [NOUVEAU]      %-16s %d recette(s) sur la page, aucun set commité", f, nLive))
+        return nLive, 0, 0
+    end
+    local add, del = 0, 0
+    for id in pairs(live) do if not have[id] then add = add + 1 end end
+    for id in pairs(have) do if not live[id] then del = del + 1 end end
+    local gained, changed = Drift.fieldDrift(live, have, content)
+    if del > 0 or changed > 0 then
+        print(string.format("  [PERTE]        %-16s commitées=%-5d ajouts=%-4d PERTES=%d  champs perdus/changés=%d",
+            f, nHave, add, del, changed))
+        return 0, del + changed, 0
+    elseif add > 0 or gained > 0 then
+        print(string.format("  [ajouts]       %-16s commitées=%-5d ajouts=%-4d champs complétés=%d",
+            f, nHave, add, gained))
+        return add + gained, 0, 0
+    end
+    print(string.format("  [identique]    %-16s commitées=%d", f, nHave))
+    return 0, 0, 0
+end
+
 local function runCheck()
     local drift, lost, broken = 0, 0, 0
     for _, prof in ipairs(cfg.profs) do
-        local f = prof.file
-        if not (subset and not only[f]) then
-            local html = read(WH_DIR .. cfg.domain .. "_" .. f .. ".html")
-            local have, nHave = committedRecipes(f)
-            local live, nLive = nil, 0
-            if html then live, nLive = parseAll(html) end
-            if not html then
-                print(string.format("  [CACHE ABSENT] %-16s %s%s_%s.html", f, WH_DIR, cfg.domain, f))
-                broken = broken + 1
-            elseif not have and nLive == 0 then
-                -- Absent des DEUX côtés : état stable et voulu, pas une panne. C'est le cas de Poisons,
-                -- dont Forever a fait des sorts SANS réactif — il n'y a aucune recette à modéliser.
-                -- Le compter en échec ferait échouer CHAQUE passage, et un contrôle qui crie au loup
-                -- à tous les coups finit par n'être plus lu.
-                print(string.format("  [sans recette] %-16s ni sur la page, ni commité (attendu)", f))
-            elseif not have then
-                -- La page en a, nous pas : un métier apparaît. C'est de la dérive à appliquer, pas une
-                -- erreur — typiquement un métier que Wowhead vient de commencer à documenter.
-                print(string.format("  [NOUVEAU]      %-16s %d recette(s) sur la page, aucun set commité", f, nLive))
-                drift = drift + nLive
-            else
-                local add, del = 0, 0
-                for id in pairs(live) do if not have[id] then add = add + 1 end end
-                for id in pairs(have) do if not live[id] then del = del + 1 end end
-                if del > 0 then
-                    print(string.format("  [PERTE]        %-16s commitées=%-5d ajouts=%-4d PERTES=%d",
-                        f, nHave, add, del))
-                    lost = lost + del
-                elseif add > 0 then
-                    print(string.format("  [ajouts]       %-16s commitées=%-5d ajouts=%d", f, nHave, add))
-                    drift = drift + add
-                else
-                    print(string.format("  [identique]    %-16s commitées=%d", f, nHave))
-                end
-            end
+        if not (subset and not only[prof.file]) then
+            local d, l, b = checkProf(prof.file)
+            drift, lost, broken = drift + d, lost + l, broken + b
         end
     end
     print()
     if broken > 0 or lost > 0 then
-        print(string.format("ÉCHEC : %d perte(s) de recette, %d problème(s) de cache. RIEN n'a été écrit.", lost, broken))
+        print(string.format("ÉCHEC : %d perte(s) (recettes, ou champs perdus/changés), %d problème(s) de cache. RIEN n'a été écrit.",
+            lost, broken))
         print("Une perte vient presque toujours d'une page incomplète : refaire le fetch AVANT de conclure.")
         os.exit(1)
     elseif drift > 0 then
-        print(string.format("DÉRIVE : %d recette(s) en plus sur Wowhead. Relancer sans -check pour les appliquer.", drift))
+        print(string.format("DÉRIVE : %d ajout(s) sur Wowhead (recettes nouvelles ou champs complétés). Relancer sans -check pour les appliquer.",
+            drift))
         os.exit(2)
     end
     print("Aucune dérive : le set commité correspond au cache.")

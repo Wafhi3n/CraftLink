@@ -42,6 +42,9 @@ plus jamais être régénéré.
   ajoute — une couche (`gen_season.lua`) ne sait que appondre. Modes : `-check` (contrôle de dérive,
   n'écrit rien, échoue sur toute PERTE), `-urls` / `-fetch` (liste des pages à télécharger). Un
   sous-ensemble de métiers en arguments n'écrit délibérément PAS le XML (il listerait un set partiel).
+- `flavor_drift.lua` — la comparaison **par champ** de `-check` (objet créé, niveau d'apprentissage),
+  module pur testé à part (`tests/test_flavor_drift.lua`). Sans elle, un objet que Wowhead documente
+  APRÈS avoir listé la recette donnait « identique », et la boucle ne le prenait jamais.
 - `refresh_flavor.ps1` — enveloppe la boucle : fetch (curl.exe, avec refus d'un téléchargement
   invalide pour ne pas écraser un bon cache) → `-check` → application seulement sur `-Apply` et
   seulement si la dérive est saine. Ne redéclare PAS la liste des métiers : elle vient de `-urls`.
@@ -126,9 +129,9 @@ en a fait des sorts **sans réactif**, il n'y a aucune recette à modéliser.
 
 ```powershell
 # Boucle complète (fetch -> contrôle -> application), cwd = CraftLink :
-.	oolsefresh_flavor.ps1              # télécharge et SIGNALE la dérive, n'écrit aucune donnée
-.	oolsefresh_flavor.ps1 -Apply       # applique, mais SEULEMENT si la dérive est saine
-.	oolsefresh_flavor.ps1 -SkipFetch   # contrôle sur le cache déjà présent
+.\tools\refresh_flavor.ps1              # télécharge et SIGNALE la dérive, n'écrit aucune donnée
+.\tools\refresh_flavor.ps1 -Apply       # applique, mais SEULEMENT si la dérive est saine
+.\tools\refresh_flavor.ps1 -SkipFetch   # contrôle sur le cache déjà présent
 ```
 
 ⚠️ **À relancer souvent, et à ne jamais automatiser jusqu'à la fusion.** Forever est en bêta (niveau
@@ -136,7 +139,10 @@ plafonné à 30 jusqu'au 4 novembre 2026) et Blizzard **offusque les données cl
 ne vient pas du datamining, elle se remplit par OBSERVATION des joueurs. Une recette qui disparaît
 d'une page est donc presque toujours un trou de collecte, pas un vrai retrait — d'où le mode
 `-check`, qui **échoue sur toute perte** (code 1), signale les ajouts (code 2) et se tait sinon
-(code 0). Et rappel de fond : ces données ne sont pas que des données, les positions dans `recipes`
+(code 0). Une perte, c'est une recette disparue OU un champ disparu/changé ; un ajout, une recette
+nouvelle OU un champ complété sur une recette connue — le cas le plus fréquent pendant la bêta, où
+Wowhead documente l'objet créé bien après la recette. Et rappel de fond : ces données ne sont pas
+que des données, les positions dans `recipes`
 sont les **bitfields du registre** échangés entre clients. Rien ne doit se fusionner sans relecture.
 
 ## Couches SAISONNIÈRES (`gen_season.lua`) — SoD
