@@ -32,7 +32,8 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 12   -- 12 : file canal-texte extraite (CraftLink_TextQueue) + QueueBeacon (balise d'ARRIVÉE enfilée au login)
+local TRANSPORT_REV = 13   -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
+                           -- 12 : file canal-texte extraite (CraftLink_TextQueue) + QueueBeacon (balise d'ARRIVÉE enfilée au login)
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -99,11 +100,21 @@ function lib:SetGlobalChannel(name) if name and name ~= "" then self._channelNam
 -- continuait de recevoir, et `sendChannelLine` continuait d'émettre (elle ne teste que `_channelIndex`).
 -- « /co channel off » promettait pourtant que le carnet global ne fonctionnerait plus. On quitte donc
 -- vraiment, on oublie l'index, et on jette la file d'envoi (ces lignes ne doivent plus jamais partir).
+-- La distribution CHANNEL des AddonMessages est-elle RÉELLEMENT délivrée sur ce serveur ? Faux tant
+-- qu'on n'en a pas reçu un seul. Mesuré sur le trafic ORDINAIRE (HI/SK/ORD…), donc aucun sondage et
+-- aucun ajout au protocole. Session seulement : un état réseau persisté qui ne se ré-atteste plus est
+-- un piège (cf. la notif de version), et le coût d'attendre la 1re réception est nul.
+-- Vrai sur WoW: Forever (mesuré 2026-09-19, 2 comptes) ; faux sur Classic Era, où la voie reste morte.
+function lib:ChannelDelivers()
+    return self._channelProven == true
+end
+
 function lib:LeaveNetwork()
     if self._channelJoined and LeaveChannelByName then
         pcall(LeaveChannelByName, self._channelName or CHANNEL_NAME)
     end
     self._channelJoined, self._channelIndex, self._joinSince = false, nil, nil
+    self._channelProven = nil   -- on quitte : le constat ne vaut plus, il se refera à la 1re réception
     for i = #self._textQueue, 1, -1 do self._textQueue[i] = nil end
     trace("net", "canal quitté (opt-out) — file d'envoi vidée")
 end
@@ -394,6 +405,11 @@ end
 local function onAddonMsg(me, ...)
     local prefix, message, distribution, sender = ...
     if prefix == PREFIX and playerShort(sender) ~= me and sameRealmGroup(sender) then
+        -- CONSTAT, pas hypothèse : si un AddonMessage nous arrive par le CANAL, alors cette voie est
+        -- ouverte sur ce serveur. Mesuré ici et NULLE PART ailleurs — surtout pas dans _Dispatch, que
+        -- la voie TEXTE (`CLD1`) appelle aussi avec "CHANNEL" : elle se prouverait elle-même et se
+        -- ferait couper sur Era, où elle est le seul chemin qui marche.
+        if distribution == "CHANNEL" then lib._channelProven = true end
         lib:_Dispatch(sender, message, distribution)
     end
 end
