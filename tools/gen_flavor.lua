@@ -20,7 +20,12 @@
 -- obtenir les commandes exactes de la saveur.
 --
 -- SECONDE PASSE : enchaîner gen_skill_colors.lua (les pages forever/ portent bien
--- "colors":[o,j,v,g]) puis check_dataversion.lua.
+-- "colors":[o,j,v,g]) puis gen_enchant_names.lua, puis check_dataversion.lua. Les deux premiers
+-- injectent un bloc sentinelle que CET outil efface en réécrivant le fichier : refresh_flavor.ps1
+-- -Apply les rejoue, dans cet ordre. L'ordre inverse donnerait le même contenu mais un autre
+-- fichier — donc un faux diff à la prochaine relecture.
+--
+-- `disenchant` n'est PAS une seconde passe : il est émis ici même, depuis tools/Curated/.
 --
 -- Usage (cwd = f:\AddonDevellopement\CraftLink) :
 --   lua tools\gen_flavor.lua Camelot -fetch          # imprime les commandes curl, n'écrit rien
@@ -29,6 +34,13 @@
 
 local DATA_ROOT = [[CraftLink-1.0\Data\]]
 local WH_DIR    = [[tools\wh\]]
+
+-- Produits de DÉSENCHANTEMENT (poussières, essences, éclats) : ce ne sont pas des recettes, aucune
+-- page Wowhead de métier ne les liste. On lit la MÊME source curatée que gen_professions.lua pour
+-- Vanilla — une liste pour deux générateurs, sinon elles finissent par diverger. Émis ICI et pas par
+-- un outil de seconde passe : ce fichier réécrit Data/<Saveur>/*.lua de zéro, un bloc sentinelle
+-- devrait donc être rejoué après chaque application, et un oubli le perdrait en silence.
+local CURATED_DE = [[tools\Curated\disenchant.lua]]
 
 local FLAVORS = {
     Camelot = {
@@ -166,6 +178,20 @@ local function renderMap(name, list, fmt)
     return table.concat(out, "\n")
 end
 
+-- { [métier canonique] = { disenchant = { [itemID] = "Nom" } } }, chargé une fois.
+local curatedDE = dofile(CURATED_DE)
+
+-- Bloc `disenchant` d'un métier, trié par itemID — même forme que Data/Vanilla/Enchanting.lua, que
+-- lisent ProfessionCatalogue et le panneau Commande (ces objets n'ont pas de spellID : sans ce
+-- bloc, le filtre « craftable uniquement » les écarte, et on ne peut plus en commander).
+local function renderDisenchant(canon)
+    local de = curatedDE[canon] and curatedDE[canon].disenchant
+    if not de then return nil, 0 end
+    local list = {}
+    for _, id in ipairs(sortedKeys(de)) do list[#list + 1] = { id, de[id] } end
+    return renderMap("disenchant", list, function(p) return string.format("        [%d] = %q,", p[1], p[2]) end), #list
+end
+
 -- Éclate le set parsé en les tables associatives du format Data. Extrait de renderProf pour tenir
 -- sous le plafond de 60 lignes/fonction de l'écosystème.
 local function collate(recipes, ids)
@@ -221,8 +247,10 @@ local function renderProf(cfg, profFile, recipes, taughtBy, aliases)
     end))
     push(renderMap("learnedAt", la, function(p) return string.format("        [%d] = %d,", p[1], p[2]) end))
     push(renderMap("taughtBy", tb, function(p) return string.format("        [%d] = %d,", p[1], p[2]) end))
+    local deBlock, nde = renderDisenchant(canon)
+    push(deBlock)
     blocks[#blocks + 1] = "})\n"
-    return table.concat(blocks, "\n"), #ids, #produces, #reag, #la, #tb
+    return table.concat(blocks, "\n"), #ids, #produces, #reag, #la, #tb, nde
 end
 
 -- ------------------------------------------------------------------
@@ -367,12 +395,12 @@ for _, p in ipairs(cfg.profs) do
                 print(string.format("SKIP %-16s aucune recette trouvée sur la page", profFile))
             else
                 local taughtBy = parseTaughtBy(html, recipes)
-                local body, nr, np, nrg, nla, ntb = renderProf(cfg, profFile, recipes, taughtBy, aliases)
+                local body, nr, np, nrg, nla, ntb, nde = renderProf(cfg, profFile, recipes, taughtBy, aliases)
                 write(DATA_ROOT .. name .. [[\]] .. profFile .. ".lua", body)
                 files[#files + 1] = profFile
                 total = total + nr
-                print(string.format("%-16s recettes=%-4d produces=%-4d reagents=%-4d learnedAt=%-4d taughtBy=%d",
-                    profFile, nr, np, nrg, nla, ntb))
+                print(string.format("%-16s recettes=%-4d produces=%-4d reagents=%-4d learnedAt=%-4d taughtBy=%d%s",
+                    profFile, nr, np, nrg, nla, ntb, nde > 0 and ("  disenchant=" .. nde) or ""))
             end
         end
     end

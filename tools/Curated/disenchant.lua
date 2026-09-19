@@ -1,9 +1,16 @@
 -- tools/Curated/disenchant.lua
--- Données curées à la main, fusionnées par tools/gen_professions.lua dans les fichiers générés.
+-- Données curées à la main, lues par DEUX générateurs — c'est la seule liste, ne pas la recopier :
+--   * tools/gen_professions.lua  -> CraftLink-1.0/Data/Vanilla/Enchanting.lua
+--   * tools/gen_flavor.lua       -> CraftLink-1.0/Data/<Saveur complète>/Enchanting.lua (Camelot)
 --
--- Les mats de désenchantement ne sont PAS des recettes : ils n'existent pas dans la base
--- MTSL (qui ne liste que des skills/recettes). On les maintient ici pour que la
--- régénération de CraftLink-1.0/Data/Vanilla/Enchanting.lua reste idempotente (ne perde pas ce bloc).
+-- Les mats de désenchantement ne sont PAS des recettes : ils n'existent ni dans la base MTSL ni sur
+-- les pages Wowhead de métier (qui ne listent que des sorts). On les maintient ici pour que la
+-- régénération des fichiers ci-dessus reste idempotente (ne perde pas ce bloc).
+--
+-- Tous vanilla, donc présents sur Forever — les 24 y sont consommés par des enchants (vérifié le
+-- 2026-09-19 sur le cache forever_Enchanting.html). Forever a peut-être ses propres produits, mais
+-- quatre réactifs neufs très utilisés (234003, 234008, 234010, 234011) y ont encore un nom VIDE :
+-- la bêta ne les a pas observés. Ne rien ajouter sur une supposition — trancher en jeu d'abord.
 --
 -- Retourne : { [profCanonical] = { disenchant = { [itemID] = "Nom" } } }
 
