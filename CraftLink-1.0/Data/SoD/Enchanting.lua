@@ -294,4 +294,51 @@ CraftLink:ExtendProfession("Enchanting", {
         [1232172] = { 0, 305, 307, 310 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+        [430409] = "drop",
+        [435481] = "vendor",
+        [435903] = "vendor",
+        [448624] = "drop",
+        [463869] = "vendor",
+        [463871] = "vendor",
+        [471400] = "vendor",
+        [1213593] = "drop",
+        [1213595] = "drop",
+        [1213598] = "drop",
+        [1213600] = "drop",
+        [1213603] = "drop",
+        [1213607] = "vendor",
+        [1213610] = "vendor",
+        [1213616] = "drop",
+        [1213622] = "drop",
+        [1213626] = "drop",
+        [1213628] = "drop",
+        [1213633] = "drop",
+        [1213635] = "drop",
+        [1216005] = "drop",
+        [1216007] = "drop",
+        [1216010] = "drop",
+        [1216014] = "drop",
+        [1216016] = "drop",
+        [1216018] = "drop",
+        [1216020] = "drop",
+        [1216022] = "drop",
+        [1216024] = "drop",
+        [1217189] = "drop",
+        [1217203] = "drop",
+    },
+    recipeVendor = {
+        [435481] = { 217689, 721, "Ziri \\" },
+        [435903] = { 217689, 721, "Ziri \\" },
+        [463869] = { 12944, 1584, "Lokhtos Darkbargainer" },
+        [463871] = { 11557, 361, "Meilosh" },
+        [471400] = { 14921, 33, "Rin'wosho the Trader" },
+        [1213607] = { 234193, 3428, "Gilded Scarab" },
+        [1213610] = { 15419, 1377, "Kania" },
+    },
+    -- <<< gen_sources.lua
 })

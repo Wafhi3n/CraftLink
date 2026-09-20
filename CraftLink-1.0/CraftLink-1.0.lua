@@ -125,7 +125,8 @@ function lib:ExtendProfession(name, def)
             if not seen[id] then seen[id] = true; base.recipes[#base.recipes + 1] = id end
         end
     end
-    for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable", "skillColors" }) do
+    for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable",
+                           "skillColors", "recipeSource", "recipeVendor" }) do
         local add = def[key]
         if type(add) == "table" then
             local dst = base[key]; if not dst then dst = {}; base[key] = dst end
@@ -205,6 +206,32 @@ end
 function lib:RecipeColors(prof, spellID)
     local def = self.professions[prof]
     return def and def.skillColors and def.skillColors[spellID] or nil
+end
+
+-- Où s'obtient le PLAN d'une recette : "vendor" | "drop" | "quest", ou nil si on ne sait pas.
+-- Donnée générée par tools/gen_sources.lua (source Wowhead, codes étalonnés sur MTSL : 95,5 %
+-- d'accord sur 739 recettes vérifiables).
+--
+-- ⚠️ "trainer" N'EST JAMAIS RENDU ICI, et c'est délibéré. Aucune page ne l'affirme : on ne le
+-- déduit que de l'absence d'objet-recette, et une absence a deux causes qu'on ne distingue pas --
+-- la recette s'apprend bien au formateur, ou la source n'est pas ENCORE connue de la source de
+-- données (c'est le cas de la moitié des objets sur Forever pendant la bêta). La lib ne rend donc
+-- que des FAITS ; l'inférence appartient à l'appelant, qui seul peut la présenter comme telle.
+function lib:RecipeSource(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.recipeSource and def.recipeSource[spellID] or nil
+end
+
+-- Le PNJ qui VEND le plan d'une recette : npcID, areaID, nom anglais. nil si la recette ne
+-- s'achète pas chez un PNJ, ou si la source de données ne nomme pas le marchand (un tiers des
+-- plans vendus). Le nom de ZONE ne se stocke jamais : `C_Map.GetAreaInfo(areaID)` le rend
+-- localisé par le client. Le nom du PNJ, lui, n'a aucune API de résolution par id : il arrive en
+-- anglais, et c'est l'appelant qui décide s'il l'affiche tel quel.
+function lib:RecipeVendor(prof, spellID)
+    local def = self.professions[prof]
+    local v = def and def.recipeVendor and def.recipeVendor[spellID]
+    if not v then return nil end
+    return v[1], v[2], v[3]
 end
 
 -- Durée (secondes) du cooldown d'une recette, ou nil si la recette n'a pas de mécanique de CD.

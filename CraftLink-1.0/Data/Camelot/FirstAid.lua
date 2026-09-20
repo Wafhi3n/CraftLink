@@ -208,4 +208,18 @@ CraftLink:RegisterProfession("First Aid", {
         [1263001] = { 0, 300, 300, 300 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+        [7929] = "vendor",
+        [7935] = "drop",
+        [10840] = "vendor",
+        [23787] = "vendor",
+        [470349] = "vendor",
+    },
+    recipeVendor = {
+    },
+    -- <<< gen_sources.lua
 })

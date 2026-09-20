@@ -124,4 +124,30 @@ CraftLink:ExtendProfession("Alchemy", {
         [1231583] = { 0, 270, 280, 290 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+        [426607] = "vendor",
+        [435969] = "vendor",
+        [439960] = "vendor",
+        [1213544] = "drop",
+        [1213546] = "drop",
+        [1213548] = "drop",
+        [1213552] = "drop",
+        [1213559] = "vendor",
+        [1213563] = "vendor",
+        [1213565] = "vendor",
+        [1213571] = "vendor",
+        [1231583] = "quest",
+    },
+    recipeVendor = {
+        [435969] = { 217689, 721, "Ziri \\" },
+        [1213559] = { 15175, 1377, "Khur Hornstriker" },
+        [1213563] = { 15175, 1377, "Khur Hornstriker" },
+        [1213565] = { 15175, 1377, "Khur Hornstriker" },
+        [1213571] = { 15175, 1377, "Khur Hornstriker" },
+    },
+    -- <<< gen_sources.lua
 })

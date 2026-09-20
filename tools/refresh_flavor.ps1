@@ -108,6 +108,12 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: seuils de difficulte echoues." -F
 & $Lua "tools\gen_enchant_names.lua" $Flavor
 if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: noms canoniques d'enchants echoues." -ForegroundColor Red; exit 1 }
 
+# Meme discipline, meme raison : la nature de la source (vendeur/butin/quete) vit dans un bloc
+# sentinelle que la regeneration ci-dessus efface. Sans ce rejeu, les icones « ou obtenir ce plan »
+# et les plans a acheter du Plan de route redeviennent muets -- en silence, sans aucune erreur.
+& $Lua "tools\gen_sources.lua" $Flavor
+if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: natures de source echouees." -ForegroundColor Red; exit 1 }
+
 & $Lua "tools\check_dataversion.lua"
 
 Write-Host "`nApplique. Reste a faire, dans l'ordre :" -ForegroundColor Green

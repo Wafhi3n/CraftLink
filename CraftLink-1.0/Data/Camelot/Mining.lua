@@ -119,4 +119,13 @@ CraftLink:RegisterProfession("Mining", {
         [1306126] = { 0, 300, 307, 315 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+    },
+    recipeVendor = {
+    },
+    -- <<< gen_sources.lua
 })

@@ -71,4 +71,13 @@ CraftLink:RegisterProfession("Poisons", {
     skillColors = {
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+    },
+    recipeVendor = {
+    },
+    -- <<< gen_sources.lua
 })

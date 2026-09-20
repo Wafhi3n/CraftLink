@@ -194,4 +194,42 @@ CraftLink:ExtendProfession("Engineering", {
         [1228088] = { 0, 255, 257, 260 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+        [424641] = "drop",
+        [431362] = "vendor",
+        [435956] = "vendor",
+        [435958] = "vendor",
+        [435964] = "vendor",
+        [435966] = "vendor",
+        [461710] = "drop",
+        [1213573] = "vendor",
+        [1213576] = "vendor",
+        [1213578] = "vendor",
+        [1213586] = "drop",
+        [1213588] = "drop",
+        [1213646] = "vendor",
+        [1214145] = "drop",
+        [1217207] = "drop",
+        [1226206] = "quest",
+        [1226207] = "quest",
+        [1226208] = "quest",
+        [1226209] = "quest",
+        [1226213] = "quest",
+        [1228088] = "quest",
+    },
+    recipeVendor = {
+        [435956] = { 217689, 721, "Ziri \\" },
+        [435958] = { 217689, 721, "Ziri \\" },
+        [435964] = { 217689, 721, "Ziri \\" },
+        [435966] = { 217689, 721, "Ziri \\" },
+        [1213573] = { 15179, 1377, "Mishta" },
+        [1213576] = { 15179, 1377, "Mishta" },
+        [1213578] = { 15179, 1377, "Mishta" },
+        [1213646] = { 15176, 1377, "Vargus" },
+    },
+    -- <<< gen_sources.lua
 })

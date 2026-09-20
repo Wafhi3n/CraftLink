@@ -73,4 +73,18 @@ CraftLink:ExtendProfession("Cooking", {
         [1225763] = { 0, 290, 300, 310 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead classic ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+        [470359] = "vendor",
+        [470370] = "vendor",
+        [1225758] = "quest",
+        [1225759] = "quest",
+        [1225760] = "quest",
+    },
+    recipeVendor = {
+    },
+    -- <<< gen_sources.lua
 })
