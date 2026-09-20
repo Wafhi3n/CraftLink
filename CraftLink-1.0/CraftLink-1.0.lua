@@ -17,7 +17,11 @@
 -- partagent le mapping position <-> spellID, condition pour que les bitfields échangés
 -- (cf. CraftLink_Registry) soient interprétables.
 
-local MAJOR, MINOR = "CraftLink-1.0", 15   -- v15 : codec registre par IDENTIFIANTS (RI|prof|payload) pour Camelot, sans catalogue ; (v14 : résolution de noms compatible MAINLINE (C_Item/C_Spell) pour WoW: Forever ; (v13 : `names` (noms anglais canoniques des recettes à objet, Joaillerie TBC/Wrath) (v12 : deSources + DisenchantSource ; v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
+local MAJOR, MINOR = "CraftLink-1.0", 16   -- v16 : `recipeOrigin` (LISTE { id, areaID, nom,
+-- faction }) remplace `recipeVendor`, + `recipePrice` et `npcSpot` ; RecipeOrigin choisit par
+-- FACTION. Bump obligatoire : la liste de fusion d'ExtendProfession et la forme des donnees
+-- changent, et une vieille copie embarquee ailleurs gagnerait le NewLibrary en silence.
+-- (v15 : codec registre par IDENTIFIANTS (RI|prof|payload) pour Camelot, sans catalogue ; (v14 : résolution de noms compatible MAINLINE (C_Item/C_Spell) pour WoW: Forever ; (v13 : `names` (noms anglais canoniques des recettes à objet, Joaillerie TBC/Wrath) (v12 : deSources + DisenchantSource ; v11 : skillColors/RecipeColors ; v10 : enchants fusionnés ; v9 : couches saisonnières ; v8 : cooldowns ; v7 : gardes anti-clobber)
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end  -- déjà chargé par un autre addon avec une version >= : on garde l'existante
 
