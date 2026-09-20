@@ -126,7 +126,7 @@ function lib:ExtendProfession(name, def)
         end
     end
     for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable",
-                           "skillColors", "recipeSource", "recipeOrigin", "recipePrice" }) do
+                           "skillColors", "recipeSource", "recipeOrigin", "recipePrice", "npcSpot" }) do
         local add = def[key]
         if type(add) == "table" then
             local dst = base[key]; if not dst then dst = {}; base[key] = dst end
@@ -274,6 +274,18 @@ end
 function lib:RecipeVendor(prof, spellID)
     if self:RecipeSource(prof, spellID) ~= "vendor" then return nil end
     return self:RecipeOrigin(prof, spellID)
+end
+
+-- OU SE TIENT UN PNJ : uiMapID, x, y (0-100), ou nil. Cle par PNJ et pas par recette -- un marchand
+-- sert des dizaines de plans, et sa position ne depend pas de ce qu'il vend.
+--
+-- `uiMapID` est l'identifiant de carte du JEU, pas un nom de zone : le repere se pose sans passer
+-- par une resolution par libelle, qui echoue des que deux noms divergent d'une lettre.
+function lib:NpcSpot(prof, npcID)
+    local def = self.professions[prof]
+    local sp = def and def.npcSpot and def.npcSpot[npcID]
+    if not sp then return nil end
+    return sp[1], sp[2], sp[3]
 end
 
 -- PRIX du plan chez son marchand, en cuivre, ou nil. nil = INCONNU, JAMAIS zéro : un appelant qui

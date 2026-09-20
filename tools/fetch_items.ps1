@@ -24,6 +24,11 @@
 
 param(
     [string] $Flavor = "Camelot",
+    # items = pages d'objet | spells = pages de sort (les FORMATEURS) | npcs = positions de carte.
+    # Les trois s'enchainent dans cet ordre : chaque passe alimente la suivante (les PNJ a visiter
+    # ne sont connus qu'une fois les origines lues).
+    [ValidateSet("items","spells","npcs")]
+    [string] $Phase  = "items",
     [int]    $Max    = 0,
     [double] $Delay  = 2.0,
     [int]    $StopAfter = 5,     # refus CONSECUTIFS avant d'abandonner (0 = ne jamais abandonner)
@@ -37,10 +42,11 @@ $Lua  = Join-Path (Split-Path $Root -Parent) "tools\elune\bin\lua.exe"
 if (-not (Test-Path $Lua)) { Write-Host "ERREUR: Elune lua.exe introuvable: $Lua" -ForegroundColor Red; exit 1 }
 Set-Location $Root
 
-$lines = & $Lua "tools\gen_origins.lua" $Flavor -urls
+$flag = @{ items = "-urls"; spells = "-urls-spells"; npcs = "-urls-npcs" }[$Phase]
+$lines = & $Lua "tools\gen_origins.lua" $Flavor $flag
 if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: gen_origins -urls a echoue." -ForegroundColor Red; exit 1 }
 
-New-Item -ItemType Directory -Force "tools\wh\items" | Out-Null
+foreach ($d in @("items","spells","npcs")) { New-Item -ItemType Directory -Force "tools\wh\$d" | Out-Null }
 
 $todo = @()
 foreach ($line in $lines) {
@@ -52,7 +58,7 @@ foreach ($line in $lines) {
 }
 if ($Max -gt 0 -and $todo.Count -gt $Max) { $todo = $todo[0..($Max - 1)] }
 
-Write-Host ("== Pages d'objet ({0}) : {1} a telecharger ==" -f $Flavor, $todo.Count) -ForegroundColor Cyan
+Write-Host ("== Pages [{0}] ({1}) : {2} a telecharger ==" -f $Phase, $Flavor, $todo.Count) -ForegroundColor Cyan
 if ($todo.Count -eq 0) { Write-Host "Cache deja complet." -ForegroundColor Green; exit 0 }
 
 $ok = 0; $ko = 0; $i = 0; $streak = 0

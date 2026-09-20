@@ -127,14 +127,35 @@ CraftLink:RegisterProfession("Mining", {
     },
     -- <<< gen_sources.lua
 
-    -- >>> gen_origins.lua (généré — Wowhead forever, pages d'objet ; ne pas éditer à la main)
+    -- >>> gen_origins.lua (généré — Wowhead forever, pages objet/sort/PNJ ; ne pas éditer à la main)
     -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
     -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
-    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    -- Le SENS des entrées vient de `recipeSource` ; `kind =` ne figure que quand
+    -- la nature a été DÉDUITE de la page d'objet, faute de réponse de la page de métier.
     recipeOrigin = {
+        [2658] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 3137, 10, "Matt Johnson", nil }, { 8128, 440, "Pikkle", nil } },
+        [2659] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [3304] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [3307] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [3308] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [3569] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [10097] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 3137, 10, "Matt Johnson", nil }, { 8128, 440, "Pikkle", nil } },
+        [10098] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [16153] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [1306126] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
     recipePrice = {
+    },
+    npcSpot = {
+        [1681] = { 1432, 37.0, 47.8 },
+        [1701] = { 1426, 69.2, 55.4 },
+        [3001] = { 1456, 34.4, 57.4 },
+        [3137] = { 1431, 74.0, 49.4 },
+        [4598] = { 1458, 55.4, 36.2 },
+        [8128] = { 1446, 51.0, 28.0 },
+        [252388] = { 2521, 65.4, 80.4 },
+        [255891] = { 2548, 77.6, 51.8 },
     },
     -- <<< gen_origins.lua
 })

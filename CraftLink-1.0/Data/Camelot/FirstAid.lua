@@ -221,16 +221,23 @@ CraftLink:RegisterProfession("First Aid", {
     },
     -- <<< gen_sources.lua
 
-    -- >>> gen_origins.lua (généré — Wowhead forever, pages d'objet ; ne pas éditer à la main)
+    -- >>> gen_origins.lua (généré — Wowhead forever, pages objet/sort/PNJ ; ne pas éditer à la main)
     -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
     -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
-    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    -- Le SENS des entrées vient de `recipeSource` ; `kind =` ne figure que quand
+    -- la nature a été DÉDUITE de la page d'objet, faute de réponse de la page de métier.
     recipeOrigin = {
+        [3276] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [3277] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [3278] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [7928] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [7929] = { { 2805, 45, "Deneb Walker", nil }, { 13476, 15, "Balai Lok'Wein", "H" } },
+        [7934] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [7935] = { { 2411, 36, "Ricter", nil }, { 4814, 719, "Twilight Elementalist", nil }, { 4437, 491, "Razorfen Warden", nil } },
         [10840] = { { 2805, 45, "Deneb Walker", nil }, { 13476, 15, "Balai Lok'Wein", "H" } },
         [23787] = { { 10856, 85, "Argent Quartermaster Hasana", nil }, { 10857, 28, "Argent Quartermaster Lightspark", nil } },
         [470349] = { { 17068, 1377, "Chief Expeditionary Requisitioner Enkles", "A" }, { 17070, 1377, "Apothecary Quinard", "H" } },
+        [1230117] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
     recipePrice = {
@@ -238,6 +245,21 @@ CraftLink:RegisterProfession("First Aid", {
         [10840] = 5000,
         [23787] = 105882,
         [470349] = 110000,
+    },
+    npcSpot = {
+        [2411] = { 1416, 19.4, 84.8 },
+        [2805] = { 1417, 27.0, 58.8 },
+        [3373] = { 1454, 34.0, 84.4 },
+        [4211] = { 1457, 51.4, 12.4 },
+        [4591] = { 1458, 73.4, 55.4 },
+        [6094] = { 1438, 55.2, 56.8 },
+        [10856] = { 1420, 83.2, 68.2 },
+        [10857] = { 1422, 42.8, 83.8 },
+        [13476] = { 1445, 36.4, 30.4 },
+        [17068] = { 1451, 33.2, 51.0 },
+        [17070] = { 1451, 50.8, 69.4 },
+        [251977] = { 1416, 17.2, 61.0 },
+        [257018] = { 2521, 43.0, 46.2 },
     },
     -- <<< gen_origins.lua
 })
