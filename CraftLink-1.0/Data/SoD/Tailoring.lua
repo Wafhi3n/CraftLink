@@ -403,20 +403,29 @@ CraftLink:ExtendProfession("Tailoring", {
         [1227723] = "quest",
         [1227724] = "quest",
     },
-    recipeOrigin = {
-        [435610] = { 217689, 721, "Ziri \\" },
-        [435827] = { 217689, 721, "Ziri \\" },
-        [439085] = { 6568, 440, "Vizzklick" },
-        [461708] = { 14371, 2557, "Shen'dralar Provisioner" },
-        [461727] = { 227853, 33, "Pix Xizzix" },
-        [1213740] = { 15179, 1377, "Mishta" },
-        [1213742] = { 15179, 1377, "Mishta" },
-        [1213744] = { 15179, 1377, "Mishta" },
-        [1214173] = { 15179, 1377, "Mishta" },
-        [1214306] = { 235232, 16029, "Ysondre" },
-        [1224607] = { 241006, 16236, "Grand Crusader Caldoran" },
-        [1227723] = { 90116, nil, "Holy Threads" },
-        [1227724] = { 90120, nil, "Red is Not Dead" },
-    },
     -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead classic, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    recipeOrigin = {
+        [435610] = { { 217689, 721, "Ziri \\\\", nil } },
+        [435827] = { { 217689, 721, "Ziri \\\\", nil } },
+        [439085] = { { 6568, 440, "Vizzklick", nil } },
+        [461708] = { { 14371, 2557, "Shen'dralar Provisioner", nil } },
+        [461727] = { { 227853, 33, "Pix Xizzix", nil } },
+        [1213740] = { { 15179, 1377, "Mishta", nil } },
+        [1213742] = { { 15179, 1377, "Mishta", nil } },
+        [1213744] = { { 15179, 1377, "Mishta", nil } },
+        [1214173] = { { 15179, 1377, "Mishta", nil } },
+        [1214306] = { { 235232, 16029, "Ysondre", nil } },
+        [1224607] = { { 241006, 16236, "Grand Crusader Caldoran", nil } },
+        [1227723] = { { 90116, nil, "Holy Threads", nil } },
+        [1227724] = { { 90120, nil, "Red is Not Dead", nil } },
+    },
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

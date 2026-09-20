@@ -331,16 +331,25 @@ CraftLink:ExtendProfession("Enchanting", {
         [1217189] = "drop",
         [1217203] = "drop",
     },
-    recipeOrigin = {
-        [435481] = { 217689, 721, "Ziri \\" },
-        [435903] = { 217689, 721, "Ziri \\" },
-        [463869] = { 12944, 1584, "Lokhtos Darkbargainer" },
-        [463871] = { 11557, 361, "Meilosh" },
-        [471400] = { 14921, 33, "Rin'wosho the Trader" },
-        [1213607] = { 234193, 3428, "Gilded Scarab" },
-        [1213610] = { 15419, 1377, "Kania" },
-        [1217189] = { 234193, 3428, "Gilded Scarab" },
-        [1217203] = { 234193, 3428, "Gilded Scarab" },
-    },
     -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead classic, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    recipeOrigin = {
+        [435481] = { { 217689, 721, "Ziri \\\\", nil } },
+        [435903] = { { 217689, 721, "Ziri \\\\", nil } },
+        [463869] = { { 12944, 1584, "Lokhtos Darkbargainer", nil } },
+        [463871] = { { 11557, 361, "Meilosh", nil } },
+        [471400] = { { 14921, 33, "Rin'wosho the Trader", nil } },
+        [1213607] = { { 234193, 3428, "Gilded Scarab", nil } },
+        [1213610] = { { 15419, 1377, "Kania", nil } },
+        [1217189] = { { 234193, 3428, "Gilded Scarab", nil } },
+        [1217203] = { { 234193, 3428, "Gilded Scarab", nil } },
+    },
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

@@ -221,22 +221,31 @@ CraftLink:ExtendProfession("Engineering", {
         [1226213] = "quest",
         [1228088] = "quest",
     },
-    recipeOrigin = {
-        [424641] = { 643, 1581, "Sneed" },
-        [435956] = { 217689, 721, "Ziri \\" },
-        [435958] = { 217689, 721, "Ziri \\" },
-        [435964] = { 217689, 721, "Ziri \\" },
-        [435966] = { 217689, 721, "Ziri \\" },
-        [1213573] = { 15179, 1377, "Mishta" },
-        [1213576] = { 15179, 1377, "Mishta" },
-        [1213578] = { 15179, 1377, "Mishta" },
-        [1213646] = { 15176, 1377, "Vargus" },
-        [1226206] = { 89471, nil, "Goblin Tinkering" },
-        [1226207] = { 89485, nil, "Whimsical Horrors" },
-        [1226208] = { 89486, nil, "A Pinch of Gunpowder" },
-        [1226209] = { 89487, nil, "Much Ado About Magnets" },
-        [1226213] = { 89491, nil, "A Complicated Escape Plan" },
-        [1228088] = { 89463, nil, "Nondisclosure Arguement" },
-    },
     -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead classic, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    recipeOrigin = {
+        [424641] = { { 643, 1581, "Sneed", nil } },
+        [435956] = { { 217689, 721, "Ziri \\\\", nil } },
+        [435958] = { { 217689, 721, "Ziri \\\\", nil } },
+        [435964] = { { 217689, 721, "Ziri \\\\", nil } },
+        [435966] = { { 217689, 721, "Ziri \\\\", nil } },
+        [1213573] = { { 15179, 1377, "Mishta", nil } },
+        [1213576] = { { 15179, 1377, "Mishta", nil } },
+        [1213578] = { { 15179, 1377, "Mishta", nil } },
+        [1213646] = { { 15176, 1377, "Vargus", nil } },
+        [1226206] = { { 89471, nil, "Goblin Tinkering", nil } },
+        [1226207] = { { 89485, nil, "Whimsical Horrors", nil } },
+        [1226208] = { { 89486, nil, "A Pinch of Gunpowder", nil } },
+        [1226209] = { { 89487, nil, "Much Ado About Magnets", nil } },
+        [1226213] = { { 89491, nil, "A Complicated Escape Plan", nil } },
+        [1228088] = { { 89463, nil, "Nondisclosure Arguement", nil } },
+    },
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

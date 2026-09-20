@@ -2340,9 +2340,18 @@ CraftLink:RegisterProfession("Inscription", {
         [71101] = "vendor",
         [71102] = "vendor",
     },
-    recipeOrigin = {
-        [71015] = { 28723, 4395, "Larana Drome" },
-        [71102] = { 28723, 4395, "Larana Drome" },
-    },
     -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead wotlk, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    recipeOrigin = {
+        [71015] = { { 28723, 4395, "Larana Drome", nil } },
+        [71102] = { { 28723, 4395, "Larana Drome", nil } },
+    },
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

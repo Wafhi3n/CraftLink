@@ -40,7 +40,16 @@ CraftLink:ExtendProfession("Mining", {
     -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
     recipeSource = {
     },
+    -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead classic, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
     recipeOrigin = {
     },
-    -- <<< gen_sources.lua
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

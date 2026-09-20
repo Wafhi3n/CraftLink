@@ -838,22 +838,31 @@ CraftLink:RegisterProfession("Alchemy", {
         [24368] = "vendor",
         [26277] = "drop",
     },
-    recipeOrigin = {
-        [3454] = { 2480, 36, "Bro'kin" },
-        [4942] = { 715, nil, "Liquid Stone" },
-        [17552] = { 7027, 46, "Blackrock Slayer" },
-        [17556] = { 11188, 618, "Evie Whirlbrew" },
-        [17575] = { 7428, 618, "Frostmaul Giant" },
-        [17577] = { 7437, 618, "Cobalt Mageweaver" },
-        [17580] = { 1853, 2057, "Darkmaster Gandling" },
-        [17634] = { 227853, 33, "Pix Xizzix" },
-        [17635] = { 10363, 1583, "General Drakkisath" },
-        [17636] = { 227853, 33, "Pix Xizzix" },
-        [17637] = { 10508, 2057, "Ras Frostwhisper" },
-        [17638] = { 10339, 1583, "Gyth" },
-        [24365] = { 14921, 33, "Rin'wosho the Trader" },
-        [24367] = { 14921, 33, "Rin'wosho the Trader" },
-        [24368] = { 14921, 33, "Rin'wosho the Trader" },
-    },
     -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead classic, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    recipeOrigin = {
+        [3454] = { { 2480, 36, "Bro'kin", nil } },
+        [4942] = { { 715, nil, "Liquid Stone", nil } },
+        [17552] = { { 7027, 46, "Blackrock Slayer", nil } },
+        [17556] = { { 11188, 618, "Evie Whirlbrew", nil } },
+        [17575] = { { 7428, 618, "Frostmaul Giant", nil } },
+        [17577] = { { 7437, 618, "Cobalt Mageweaver", nil } },
+        [17580] = { { 1853, 2057, "Darkmaster Gandling", nil } },
+        [17634] = { { 227853, 33, "Pix Xizzix", nil } },
+        [17635] = { { 10363, 1583, "General Drakkisath", nil } },
+        [17636] = { { 227853, 33, "Pix Xizzix", nil } },
+        [17637] = { { 10508, 2057, "Ras Frostwhisper", nil } },
+        [17638] = { { 10339, 1583, "Gyth", nil } },
+        [24365] = { { 14921, 33, "Rin'wosho the Trader", nil } },
+        [24367] = { { 14921, 33, "Rin'wosho the Trader", nil } },
+        [24368] = { { 14921, 33, "Rin'wosho the Trader", nil } },
+    },
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

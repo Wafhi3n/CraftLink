@@ -34,6 +34,20 @@ plus jamais être régénéré.
   `gen_season.lua`, qui régénère les fichiers de saison. Lacune connue : Poisons Vanilla (la page
   skill=40 n'expose pas `colors`) → l'heuristique runtime prend le relais. Consommé par
   `lib:RecipeColors(prof, spellID)` (lib v11).
+- `gen_sources.lua` — ajoute `recipeSource` (spellID → `"vendor"` | `"drop"` | `"quest"`) en relisant
+  le cache des pages de MÉTIER. Les codes Wowhead ne sont pas devinés mais **étalonnés** sur MTSL
+  (661 objets de vérité terrain) ; tout code non mesuré est ignoré plutôt que deviné. Le FORMATEUR
+  ne s'écrit jamais ici : aucune page ne l'affirme, on ne le déduit que de l'absence d'objet-recette,
+  et une donnée générée ne doit contenir que des faits. Sentinelles propres, ne touche pas `recipes`.
+- `gen_origins.lua` + `fetch_items.ps1` — QUI est derrière le plan : `recipeOrigin`
+  (spellID → `{ {id, areaID, nom, faction}, ... }`) et `recipePrice` (en cuivre), lus sur la page de
+  l'**objet** (`sold-by`, `dropped-by` trié par taux, `reward-from-q`). ⚠️ **Pourquoi une page par
+  objet** : la page de métier ne donne qu'UN nom, sans sa faction — pour « Recipe: Gingerbread
+  Cookie » c'était Wulmort Jinglepocket, à Forgefer, pour tout le monde, y compris la Horde.
+  `fetch_items.ps1` télécharge (cache conservé, pages déjà là sautées, `-Max N` pour un essai) puis
+  `gen_origins.lua <Saveur>` écrit. **À lancer APRÈS `gen_sources.lua`** : il lit `recipeSource` pour
+  savoir quelle liste de la page regarder. Quand une page manque du cache, on retombe sur le nom que
+  la page de métier donnait — sans faction, donc marqué comme inconnu.
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.

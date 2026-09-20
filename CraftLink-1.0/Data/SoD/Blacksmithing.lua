@@ -478,30 +478,39 @@ CraftLink:ExtendProfession("Blacksmithing", {
         [1224638] = "drop",
         [1224639] = "drop",
     },
-    recipeOrigin = {
-        [435906] = { 217689, 721, "Ziri \\" },
-        [435910] = { 217689, 721, "Ziri \\" },
-        [439120] = { 80241, nil, "The Origins of Smithing" },
-        [439126] = { 5411, 440, "Krinkle Goodsteel" },
-        [439128] = { 2482, 33, "Zarena Cromwind" },
-        [460460] = { 84338, nil, "A Binding Contract" },
-        [461651] = { 84495, nil, "Fiery Plate Gauntlets" },
-        [461667] = { 9543, 1584, "Ribbly Screwspigot" },
-        [461716] = { 10997, 2017, "Cannon Master Willey" },
-        [461733] = { 84496, nil, "Sweet Serenity" },
-        [461735] = { 10899, 1583, "Goraluk Anvilcrack" },
-        [461737] = { 11278, 28, "Magnus Frostwake" },
-        [1213643] = { 15176, 1377, "Vargus" },
-        [1213709] = { 15176, 1377, "Vargus" },
-        [1213711] = { 15176, 1377, "Vargus" },
-        [1213715] = { 15176, 1377, "Vargus" },
-        [1213746] = { 15176, 1377, "Vargus" },
-        [1213748] = { 15176, 1377, "Vargus" },
-        [1214257] = { 15340, 3429, "Moam" },
-        [1214270] = { 15471, 3429, "Lieutenant General Andorov" },
-        [1214274] = { 15471, 3429, "Lieutenant General Andorov" },
-        [1215507] = { 15263, 3428, "The Prophet Skeram" },
-        [1224631] = { 241006, 16236, "Grand Crusader Caldoran" },
-    },
     -- <<< gen_sources.lua
+
+    -- >>> gen_origins.lua (généré — Wowhead classic, pages d'objet ; ne pas éditer à la main)
+    -- QUI est derrière le plan : [spellID] = { { id, areaID, "nom", faction }, ... }
+    -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
+    -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
+    recipeOrigin = {
+        [435906] = { { 217689, 721, "Ziri \\\\", nil } },
+        [435910] = { { 217689, 721, "Ziri \\\\", nil } },
+        [439120] = { { 80241, nil, "The Origins of Smithing", nil } },
+        [439126] = { { 5411, 440, "Krinkle Goodsteel", nil } },
+        [439128] = { { 2482, 33, "Zarena Cromwind", nil } },
+        [460460] = { { 84338, nil, "A Binding Contract", nil } },
+        [461651] = { { 84495, nil, "Fiery Plate Gauntlets", nil } },
+        [461667] = { { 9543, 1584, "Ribbly Screwspigot", nil } },
+        [461716] = { { 10997, 2017, "Cannon Master Willey", nil } },
+        [461733] = { { 84496, nil, "Sweet Serenity", nil } },
+        [461735] = { { 10899, 1583, "Goraluk Anvilcrack", nil } },
+        [461737] = { { 11278, 28, "Magnus Frostwake", nil } },
+        [1213643] = { { 15176, 1377, "Vargus", nil } },
+        [1213709] = { { 15176, 1377, "Vargus", nil } },
+        [1213711] = { { 15176, 1377, "Vargus", nil } },
+        [1213715] = { { 15176, 1377, "Vargus", nil } },
+        [1213746] = { { 15176, 1377, "Vargus", nil } },
+        [1213748] = { { 15176, 1377, "Vargus", nil } },
+        [1214257] = { { 15340, 3429, "Moam", nil } },
+        [1214270] = { { 15471, 3429, "Lieutenant General Andorov", nil } },
+        [1214274] = { { 15471, 3429, "Lieutenant General Andorov", nil } },
+        [1215507] = { { 15263, 3428, "The Prophet Skeram", nil } },
+        [1224631] = { { 241006, 16236, "Grand Crusader Caldoran", nil } },
+    },
+    -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
+    recipePrice = {
+    },
+    -- <<< gen_origins.lua
 })

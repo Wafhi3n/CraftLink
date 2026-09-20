@@ -126,7 +126,7 @@ function lib:ExtendProfession(name, def)
         end
     end
     for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable",
-                           "skillColors", "recipeSource", "recipeOrigin" }) do
+                           "skillColors", "recipeSource", "recipeOrigin", "recipePrice" }) do
         local add = def[key]
         if type(add) == "table" then
             local dst = base[key]; if not dst then dst = {}; base[key] = dst end
@@ -222,23 +222,50 @@ function lib:RecipeSource(prof, spellID)
     return def and def.recipeSource and def.recipeSource[spellID] or nil
 end
 
--- QUI ou QUOI est derrière le plan d'une recette : id, areaID, nom anglais — ou nil quand la source
--- de données ne le nomme pas (le cas de plus de la moitié des plans).
+-- Le camp du joueur, en "A"/"H", ou nil quand le client ne répond pas.
 --
--- ⚠️ LE SENS DU TRIPLET NE VIENT PAS D'ICI, IL VIENT DE `RecipeSource` : le marchand pour "vendor",
--- la CRÉATURE qui lâche le plan pour "drop", la QUÊTE pour "quest" (areaID alors toujours nil). Un
--- appelant qui afficherait ce nom sans sa nature enverrait le joueur « acheter » son plan à un ours.
--- C'est un EXEMPLE, jamais une liste : Wowhead nomme parfois dix créatures pour un même plan, on
--- n'en garde qu'une, et la vue doit le présenter comme tel.
+-- ⚠️ PAS DE CACHE, et ce n'est pas un oubli. `UnitFactionGroup` rend nil avant que le personnage
+-- soit entré en jeu ; mémoriser ce nil-là figerait « faction inconnue » pour toute la session, et
+-- tous les joueurs se verraient proposer le marchand du camp d'en face. L'appel est trivial, il est
+-- fait au survol d'une ligne, pas dans une boucle : il n'y a rien à économiser ici.
+local function side()
+    local f = UnitFactionGroup and UnitFactionGroup("player")
+    return (f == "Alliance" and "A") or (f == "Horde" and "H") or nil
+end
+
+-- TOUTES les entrées connues derrière le plan d'une recette : { { id, areaID, nom, faction }, ... }
+-- ou nil. Le SENS de ces entrées vient de `RecipeSource` : le marchand qui vend le plan, la créature
+-- qui le lâche (triées par taux décroissant), ou la quête qui le donne (areaID toujours nil).
 --
--- Le nom de ZONE ne se stocke jamais : `C_Map.GetAreaInfo(areaID)` le rend localisé par le client.
--- Le nom, lui, n'a aucune API de résolution par id : il arrive en anglais, et c'est l'appelant qui
--- décide s'il l'affiche tel quel.
-function lib:RecipeOrigin(prof, spellID)
+-- La faction "A"/"H" veut dire CE CAMP SEULEMENT ; nil veut dire « les deux » OU « on ne sait pas »,
+-- et ces deux-là ne se distinguent pas -- la donnée ne le dit pas. Un appelant ne doit donc jamais
+-- présenter un nil comme une garantie de neutralité.
+function lib:RecipeOrigins(prof, spellID)
     local def = self.professions[prof]
-    local v = def and def.recipeOrigin and def.recipeOrigin[spellID]
-    if not v then return nil end
-    return v[1], v[2], v[3]
+    return def and def.recipeOrigin and def.recipeOrigin[spellID] or nil
+end
+
+-- L'entrée à montrer à CE joueur : la première de son camp, sinon la première sans camp. Rend
+-- `id, areaID, nom, faction`.
+--
+-- ⚠️ POURQUOI LA FACTION EST UN CRITÈRE ET PAS UN DÉTAIL. Envoyer un joueur de la Horde chez un
+-- marchand de Forgefer n'est pas une imprécision, c'est un aller simple en territoire ennemi. La
+-- page de métier ne donnait qu'UN nom sans son camp : pour « Recipe: Gingerbread Cookie » c'était
+-- systématiquement Wulmort Jinglepocket, à Forgefer, pour tout le monde.
+--
+-- Quand RIEN ne correspond, on rend quand même la première entrée plutôt que nil : un nom en
+-- territoire adverse reste une information. C'est à la VUE de dire qu'elle l'est (la faction est
+-- rendue pour ça), pas à la lib de mentir par omission.
+function lib:RecipeOrigin(prof, spellID)
+    local list = self:RecipeOrigins(prof, spellID)
+    if not (list and list[1]) then return nil end
+    local me, neutral = side(), nil
+    for _, e in ipairs(list) do
+        if e[4] == me then return e[1], e[2], e[3], e[4] end
+        if not e[4] and not neutral then neutral = e end
+    end
+    local e = neutral or list[1]
+    return e[1], e[2], e[3], e[4]
 end
 
 -- Le PNJ qui VEND le plan, et lui seul : la même donnée, filtrée sur la nature. Les appelants
@@ -247,6 +274,13 @@ end
 function lib:RecipeVendor(prof, spellID)
     if self:RecipeSource(prof, spellID) ~= "vendor" then return nil end
     return self:RecipeOrigin(prof, spellID)
+end
+
+-- PRIX du plan chez son marchand, en cuivre, ou nil. nil = INCONNU, JAMAIS zéro : un appelant qui
+-- confondrait les deux conseillerait d'acheter « gratuitement » un plan qui coûte.
+function lib:RecipePrice(prof, spellID)
+    local def = self.professions[prof]
+    return def and def.recipePrice and def.recipePrice[spellID] or nil
 end
 
 -- Durée (secondes) du cooldown d'une recette, ou nil si la recette n'a pas de mécanique de CD.
