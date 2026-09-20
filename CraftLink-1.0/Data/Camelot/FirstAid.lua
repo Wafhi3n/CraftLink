@@ -226,9 +226,18 @@ CraftLink:RegisterProfession("First Aid", {
     -- faction "A"/"H" = ce camp SEULEMENT ; nil = les deux, ou inconnue.
     -- Le SENS des entrées vient de `recipeSource` : marchand, créature, ou quête.
     recipeOrigin = {
+        [7929] = { { 2805, 45, "Deneb Walker", nil }, { 13476, 15, "Balai Lok'Wein", "H" } },
+        [7935] = { { 2411, 36, "Ricter", nil }, { 4814, 719, "Twilight Elementalist", nil }, { 4437, 491, "Razorfen Warden", nil } },
+        [10840] = { { 2805, 45, "Deneb Walker", nil }, { 13476, 15, "Balai Lok'Wein", "H" } },
+        [23787] = { { 10856, 85, "Argent Quartermaster Hasana", nil }, { 10857, 28, "Argent Quartermaster Lightspark", nil } },
+        [470349] = { { 17068, 1377, "Chief Expeditionary Requisitioner Enkles", "A" }, { 17070, 1377, "Apothecary Quinard", "H" } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
     recipePrice = {
+        [7929] = 2200,
+        [10840] = 5000,
+        [23787] = 105882,
+        [470349] = 110000,
     },
     -- <<< gen_origins.lua
 })
