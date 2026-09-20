@@ -84,7 +84,10 @@ CraftLink:ExtendProfession("Cooking", {
         [1225759] = "quest",
         [1225760] = "quest",
     },
-    recipeVendor = {
+    recipeOrigin = {
+        [1225758] = { 89253, nil, "Main Course" },
+        [1225759] = { 89245, nil, "Fish in a Barrel" },
+        [1225760] = { 89236, nil, "Wrangling Apples" },
     },
     -- <<< gen_sources.lua
 })

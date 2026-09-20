@@ -561,13 +561,19 @@ CraftLink:ExtendProfession("Leatherworking", {
         [1226689] = "quest",
         [1226690] = "quest",
     },
-    recipeVendor = {
+    recipeOrigin = {
         [435819] = { 217689, 721, "Ziri \\" },
         [435904] = { 217689, 721, "Ziri \\" },
         [435949] = { 217689, 721, "Ziri \\" },
         [435951] = { 217689, 721, "Ziri \\" },
         [435953] = { 217689, 721, "Ziri \\" },
+        [461645] = { 6146, nil, "Cliff Breaker" },
         [461655] = { 9499, 1584, "Plugger Spazzring" },
+        [461657] = { 8903, 1584, "Anvilrage Captain" },
+        [461659] = { 8898, 1584, "Anvilrage Marshal" },
+        [461661] = { 9259, 1583, "Firebrand Grunt" },
+        [461663] = { 9260, 1583, "Firebrand Legionnaire" },
+        [461665] = { 7035, 46, "Firegut Brute" },
         [461673] = { 12957, 16, "Blimo Gadgetspring" },
         [461720] = { 11874, 8, "Masat T'andr" },
         [1213717] = { 15293, 1377, "Aendel Windspear" },
@@ -580,6 +586,10 @@ CraftLink:ExtendProfession("Leatherworking", {
         [1213736] = { 15293, 1377, "Aendel Windspear" },
         [1213738] = { 15293, 1377, "Aendel Windspear" },
         [1213751] = { 15293, 1377, "Aendel Windspear" },
+        [1224615] = { 241006, 16236, "Grand Crusader Caldoran" },
+        [1224623] = { 241006, 16236, "Grand Crusader Caldoran" },
+        [1226689] = { 89381, nil, "Pin Cushion" },
+        [1226690] = { 89421, nil, "Bullet Heaven" },
     },
     -- <<< gen_sources.lua
 })

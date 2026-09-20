@@ -2330,4 +2330,19 @@ CraftLink:RegisterProfession("Inscription", {
         [414814] = { 390, 390, 397, 405 },
     },
     -- <<< gen_skill_colors.lua
+
+    -- >>> gen_sources.lua (généré — Wowhead wotlk ; ne pas éditer à la main)
+    -- où s'obtient le PLAN : [spellID] = "vendor" | "drop" | "quest"
+    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
+    recipeSource = {
+        [64051] = "drop",
+        [71015] = "vendor",
+        [71101] = "vendor",
+        [71102] = "vendor",
+    },
+    recipeOrigin = {
+        [71015] = { 28723, 4395, "Larana Drome" },
+        [71102] = { 28723, 4395, "Larana Drome" },
+    },
+    -- <<< gen_sources.lua
 })

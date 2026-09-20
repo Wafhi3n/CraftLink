@@ -40,7 +40,7 @@ CraftLink:ExtendProfession("Mining", {
     -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)
     recipeSource = {
     },
-    recipeVendor = {
+    recipeOrigin = {
     },
     -- <<< gen_sources.lua
 })

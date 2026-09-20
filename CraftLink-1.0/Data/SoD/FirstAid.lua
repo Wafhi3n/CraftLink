@@ -44,7 +44,7 @@ CraftLink:ExtendProfession("First Aid", {
     recipeSource = {
         [470349] = "vendor",
     },
-    recipeVendor = {
+    recipeOrigin = {
     },
     -- <<< gen_sources.lua
 })

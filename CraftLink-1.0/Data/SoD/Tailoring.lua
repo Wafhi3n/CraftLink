@@ -403,7 +403,7 @@ CraftLink:ExtendProfession("Tailoring", {
         [1227723] = "quest",
         [1227724] = "quest",
     },
-    recipeVendor = {
+    recipeOrigin = {
         [435610] = { 217689, 721, "Ziri \\" },
         [435827] = { 217689, 721, "Ziri \\" },
         [439085] = { 6568, 440, "Vizzklick" },
@@ -413,6 +413,10 @@ CraftLink:ExtendProfession("Tailoring", {
         [1213742] = { 15179, 1377, "Mishta" },
         [1213744] = { 15179, 1377, "Mishta" },
         [1214173] = { 15179, 1377, "Mishta" },
+        [1214306] = { 235232, 16029, "Ysondre" },
+        [1224607] = { 241006, 16236, "Grand Crusader Caldoran" },
+        [1227723] = { 90116, nil, "Holy Threads" },
+        [1227724] = { 90120, nil, "Red is Not Dead" },
     },
     -- <<< gen_sources.lua
 })

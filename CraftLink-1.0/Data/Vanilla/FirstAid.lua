@@ -135,7 +135,7 @@ CraftLink:RegisterProfession("First Aid", {
         [10840] = "vendor",
         [23787] = "vendor",
     },
-    recipeVendor = {
+    recipeOrigin = {
     },
     -- <<< gen_sources.lua
 })

@@ -1176,9 +1176,14 @@ CraftLink:RegisterProfession("Alchemy", {
         [435969] = "vendor",
         [1231583] = "quest",
     },
-    recipeVendor = {
+    recipeOrigin = {
         [3454] = { 2480, 36, "Bro'kin" },
+        [4942] = { 715, nil, "Liquid Stone" },
         [11459] = { 5594, 440, "Alchemist Pestlezugg" },
+        [17552] = { 7027, 46, "Blackrock Slayer" },
+        [17575] = { 7428, 618, "Frostmaul Giant" },
+        [17577] = { 7437, 618, "Cobalt Mageweaver" },
+        [17579] = { 240785, 16236, "Scarlet Alchemist" },
         [17580] = { 1853, 2057, "Darkmaster Gandling" },
         [17634] = { 227853, 33, "Pix Xizzix" },
         [17635] = { 10363, 1583, "General Drakkisath" },

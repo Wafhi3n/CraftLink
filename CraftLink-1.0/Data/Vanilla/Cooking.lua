@@ -678,7 +678,7 @@ CraftLink:RegisterProfession("Cooking", {
         [25704] = "vendor",
         [25954] = "vendor",
     },
-    recipeVendor = {
+    recipeOrigin = {
         [2542] = { 340, 1519, "Kendor Kabonka" },
         [2543] = { 340, 1519, "Kendor Kabonka" },
         [2545] = { 340, 1519, "Kendor Kabonka" },
@@ -691,10 +691,13 @@ CraftLink:RegisterProfession("Cooking", {
         [3372] = { 340, 1519, "Kendor Kabonka" },
         [3373] = { 340, 1519, "Kendor Kabonka" },
         [3377] = { 340, 1519, "Kendor Kabonka" },
+        [3399] = { 564, nil, "Costly Menace" },
+        [6412] = { 4161, nil, "Recipe of the Kaldorei" },
         [6413] = { 3881, 14, "Grimtak" },
         [6414] = { 3081, 215, "Wunna Darkmane" },
         [6415] = { 4200, 148, "Laird" },
         [6416] = { 3482, 17, "Tari'qa" },
+        [6417] = { 862, nil, "Dig Rat Stew" },
         [6418] = { 3482, 17, "Tari'qa" },
         [7213] = { 2664, 33, "Kelsey Yance" },
         [7754] = { 1684, 38, "Khara Deepwater" },
@@ -709,7 +712,9 @@ CraftLink:RegisterProfession("Cooking", {
         [18243] = { 8137, 440, "Gikkix" },
         [18244] = { 8137, 440, "Gikkix" },
         [20626] = { 8139, 440, "Jabbey" },
+        [22761] = { 14354, 2557, "Pusillin" },
         [24418] = { 4879, 15, "Ogg'marr" },
+        [25659] = { 8586, nil, "Dirge's Kickin' Chimaerok Chops" },
     },
     -- <<< gen_sources.lua
 })

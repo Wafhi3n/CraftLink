@@ -126,7 +126,7 @@ function lib:ExtendProfession(name, def)
         end
     end
     for _, key in ipairs({ "produces", "reagents", "learnedAt", "taughtBy", "itemToSpell", "sellable",
-                           "skillColors", "recipeSource", "recipeVendor" }) do
+                           "skillColors", "recipeSource", "recipeOrigin" }) do
         local add = def[key]
         if type(add) == "table" then
             local dst = base[key]; if not dst then dst = {}; base[key] = dst end
@@ -222,16 +222,31 @@ function lib:RecipeSource(prof, spellID)
     return def and def.recipeSource and def.recipeSource[spellID] or nil
 end
 
--- Le PNJ qui VEND le plan d'une recette : npcID, areaID, nom anglais. nil si la recette ne
--- s'achète pas chez un PNJ, ou si la source de données ne nomme pas le marchand (un tiers des
--- plans vendus). Le nom de ZONE ne se stocke jamais : `C_Map.GetAreaInfo(areaID)` le rend
--- localisé par le client. Le nom du PNJ, lui, n'a aucune API de résolution par id : il arrive en
--- anglais, et c'est l'appelant qui décide s'il l'affiche tel quel.
-function lib:RecipeVendor(prof, spellID)
+-- QUI ou QUOI est derrière le plan d'une recette : id, areaID, nom anglais — ou nil quand la source
+-- de données ne le nomme pas (le cas de plus de la moitié des plans).
+--
+-- ⚠️ LE SENS DU TRIPLET NE VIENT PAS D'ICI, IL VIENT DE `RecipeSource` : le marchand pour "vendor",
+-- la CRÉATURE qui lâche le plan pour "drop", la QUÊTE pour "quest" (areaID alors toujours nil). Un
+-- appelant qui afficherait ce nom sans sa nature enverrait le joueur « acheter » son plan à un ours.
+-- C'est un EXEMPLE, jamais une liste : Wowhead nomme parfois dix créatures pour un même plan, on
+-- n'en garde qu'une, et la vue doit le présenter comme tel.
+--
+-- Le nom de ZONE ne se stocke jamais : `C_Map.GetAreaInfo(areaID)` le rend localisé par le client.
+-- Le nom, lui, n'a aucune API de résolution par id : il arrive en anglais, et c'est l'appelant qui
+-- décide s'il l'affiche tel quel.
+function lib:RecipeOrigin(prof, spellID)
     local def = self.professions[prof]
-    local v = def and def.recipeVendor and def.recipeVendor[spellID]
+    local v = def and def.recipeOrigin and def.recipeOrigin[spellID]
     if not v then return nil end
     return v[1], v[2], v[3]
+end
+
+-- Le PNJ qui VEND le plan, et lui seul : la même donnée, filtrée sur la nature. Les appelants
+-- historiques (liste de courses de la Bourse d'artisan, fournitures du Plan de route) parlent tous
+-- d'un ACHAT ; leur rendre la créature qui lâche le plan leur ferait conseiller d'aller l'acheter.
+function lib:RecipeVendor(prof, spellID)
+    if self:RecipeSource(prof, spellID) ~= "vendor" then return nil end
+    return self:RecipeOrigin(prof, spellID)
 end
 
 -- Durée (secondes) du cooldown d'une recette, ou nil si la recette n'a pas de mécanique de CD.

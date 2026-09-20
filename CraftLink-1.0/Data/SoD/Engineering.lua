@@ -221,7 +221,8 @@ CraftLink:ExtendProfession("Engineering", {
         [1226213] = "quest",
         [1228088] = "quest",
     },
-    recipeVendor = {
+    recipeOrigin = {
+        [424641] = { 643, 1581, "Sneed" },
         [435956] = { 217689, 721, "Ziri \\" },
         [435958] = { 217689, 721, "Ziri \\" },
         [435964] = { 217689, 721, "Ziri \\" },
@@ -230,6 +231,12 @@ CraftLink:ExtendProfession("Engineering", {
         [1213576] = { 15179, 1377, "Mishta" },
         [1213578] = { 15179, 1377, "Mishta" },
         [1213646] = { 15176, 1377, "Vargus" },
+        [1226206] = { 89471, nil, "Goblin Tinkering" },
+        [1226207] = { 89485, nil, "Whimsical Horrors" },
+        [1226208] = { 89486, nil, "A Pinch of Gunpowder" },
+        [1226209] = { 89487, nil, "Much Ado About Magnets" },
+        [1226213] = { 89491, nil, "A Complicated Escape Plan" },
+        [1228088] = { 89463, nil, "Nondisclosure Arguement" },
     },
     -- <<< gen_sources.lua
 })

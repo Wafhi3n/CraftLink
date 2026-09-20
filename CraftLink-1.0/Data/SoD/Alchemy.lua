@@ -142,7 +142,7 @@ CraftLink:ExtendProfession("Alchemy", {
         [1213571] = "vendor",
         [1231583] = "quest",
     },
-    recipeVendor = {
+    recipeOrigin = {
         [435969] = { 217689, 721, "Ziri \\" },
         [1213559] = { 15175, 1377, "Khur Hornstriker" },
         [1213563] = { 15175, 1377, "Khur Hornstriker" },

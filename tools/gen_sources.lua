@@ -26,12 +26,21 @@
 -- « aucun objet connu, donc probablement le formateur » appartient au fournisseur runtime, qui
 -- peut la nuancer et la dire au joueur. Écrire "trainer" ici figerait une supposition en donnée.
 --
--- SECONDE TABLE, `recipeVendor` : QUI vend le plan, et où. Wowhead attache un `sourcemore` aux
--- lignes d'objet ; les entrées `"t":1` sont des PNJ (`ti` = son id, `n` = son nom anglais, `z` =
--- l'AreaID du jeu). On stocke l'AreaID et JAMAIS le nom de zone : `C_Map.GetAreaInfo` le rend
--- LOCALISÉ par le client, sur les deux saveurs. Le nom du PNJ, lui, n'a aucune API de résolution
--- par id -- il est donc stocké en anglais, faute de mieux, et c'est la seule chaîne figée ici.
--- Couverture : 214 des 346 plans vendus sur `forever`, 275 des 407 sur `classic`.
+-- SECONDE TABLE, `recipeOrigin` : QUI est derrière le plan, et où. Wowhead attache un `sourcemore`
+-- aux lignes d'objet ; les entrées `"t":1` sont des PNJ (`ti` = son id, `n` = son nom anglais, `z` =
+-- l'AreaID du jeu) et les `"t":5` des quêtes (`ti` = son id, pas de zone). On stocke l'AreaID et
+-- JAMAIS le nom de zone : `C_Map.GetAreaInfo` le rend LOCALISÉ par le client, sur toutes les
+-- saveurs. Le nom, lui, n'a aucune API de résolution par id -- il est stocké en anglais, faute de
+-- mieux, et c'est la seule chaîne figée ici.
+--
+-- ⚠️ UNE SEULE TABLE, ET SON SENS VIENT DE `recipeSource`. Le même champ désigne le MARCHAND sur un
+-- plan vendu, la CRÉATURE QUI LE LÂCHE sur un plan qui tombe, et la QUÊTE sur un plan de quête.
+-- Longtemps on ne gardait que le premier cas, au motif qu'une créature « n'est pas un endroit où
+-- aller l'acheter » -- vrai, mais c'est quand même la réponse à « où je vais le chercher ? », et
+-- s'en priver laissait 422 recettes de butin avec le seul mot « Butin » pour tout viatique.
+-- Trois tables jumelles obligeraient chaque appelant à les interroger dans le bon ordre ; une table
+-- plus la nature déjà stockée ne laisse aucune combinaison à inventer.
+-- Couverture mesurée sur `forever` : 184 marchands, 133 créatures, 46 quêtes.
 --
 -- JOINTURE objet -> sort : le bloc `taughtBy` DU FICHIER DATA, pas une re-déduction par nom.
 -- gen_flavor.lua l'a déjà calculé et désambiguïsé ; le refaire autrement, c'est se préparer deux
@@ -121,13 +130,19 @@ local function balancedRows(html, needle)
     end
 end
 
--- Premier PNJ (`"t":1`) du `sourcemore` d'une ligne : id, AreaID, nom anglais. nil s'il n'y en a
--- pas -- les autres types (`t:3` = conteneur, objet du décor) ne sont pas des interlocuteurs.
-local function parseVendorNpc(row)
+-- Première entrée de type `t` du `sourcemore` d'une ligne : id, AreaID (absent sur une quête), nom
+-- anglais. nil s'il n'y en a pas. Deux types servent : `1` (PNJ -- marchand OU créature qui lâche le
+-- plan, c'est la MÊME forme) et `5` (quête). `t:3` (conteneur, objet du décor) n'est pas un
+-- interlocuteur : on n'en fait rien.
+--
+-- ⚠️ ON N'EN GARDE QU'UNE, la première. Wowhead en liste parfois dix (un plan que lâchent tous les
+-- bandits d'une zone) ; les dix ne tiendraient dans aucune infobulle et ne diraient pas mieux où
+-- aller. C'est un EXEMPLE, et la vue doit le présenter comme tel -- jamais comme le seul endroit.
+local function parseSourceMore(row, t)
     local sm = row:match('"sourcemore":(%b[])')
     if not sm then return nil end
     for entry in sm:gmatch("%b{}") do
-        if entry:match('"t":(%d+)') == "1" then
+        if entry:match('"t":(%d+)') == t then
             local ti = tonumber(entry:match('"ti":(%d+)'))
             local n  = entry:match('"n":"([^"]*)"')
             if ti and n then return ti, tonumber(entry:match('"z":(%d+)')), n end
@@ -140,7 +155,7 @@ end
 -- `nNoSrc` celles sans aucun champ `source` (Wowhead ne sait pas encore) — la différence entre
 -- les deux est la mesure de fraîcheur de la page, et elle doit rester VISIBLE.
 local function parseItemKinds(html)
-    local out, npc, nSeen, nNoSrc = {}, {}, 0, 0
+    local out, origin, nSeen, nNoSrc = {}, {}, 0, 0
     for _, row in ipairs(balancedRows(html, '"classs":9')) do
         nSeen = nSeen + 1
         local id  = tonumber(row:match('"id":(%d+)'))
@@ -155,32 +170,36 @@ local function parseItemKinds(html)
             for _, k in ipairs(PREF) do
                 if got[k] then out[id] = k; break end
             end
-            -- Le PNJ n'a de sens que pour un plan VENDU : sur un plan qui tombe, le `sourcemore`
-            -- désigne la créature qui le lâche, ce qui n'est pas un endroit où aller l'acheter.
-            if out[id] == "vendor" then
-                local ti, z, n = parseVendorNpc(row)
-                if ti then npc[id] = { ti, z, n } end
+            -- Le `sourcemore` se lit SELON la nature retenue : marchand sur un plan vendu, créature
+            -- sur un plan qui tombe (même forme `t:1`), quête sur un plan de quête (`t:5`).
+            local kind = out[id]
+            if kind == "vendor" or kind == "drop" then
+                local ti, z, n = parseSourceMore(row, "1")
+                if ti then origin[id] = { ti, z, n } end
+            elseif kind == "quest" then
+                local ti, _, n = parseSourceMore(row, "5")
+                if ti then origin[id] = { ti, nil, n } end
             end
         end
     end
-    return out, nSeen, nNoSrc, npc
+    return out, nSeen, nNoSrc, origin
 end
 
 -- Bloc sentinellisé + compteurs par nature. Restreint aux recettes que le fichier connaît : un
 -- objet dont le sort n'est pas dans `taughtBy` n'a rien à faire ici.
-local function renderUnit(kinds, taught, sourceNote, npc)
+local function renderUnit(kinds, taught, sourceNote, origin)
     local rows, count = {}, { vendor = 0, drop = 0, quest = 0 }
-    local vend = {}
+    local named, orig = { vendor = 0, drop = 0, quest = 0 }, {}
     for itemID, kind in pairs(kinds) do
         local sid = taught[itemID]
         if sid then
             rows[#rows + 1] = { sid, kind }; count[kind] = count[kind] + 1
-            local v = npc and npc[itemID]
-            if v then vend[#vend + 1] = { sid, v[1], v[2], v[3] } end
+            local v = origin and origin[itemID]
+            if v then orig[#orig + 1] = { sid, v[1], v[2], v[3] }; named[kind] = named[kind] + 1 end
         end
     end
     table.sort(rows, function(a, b) return a[1] < b[1] end)
-    table.sort(vend, function(a, b) return a[1] < b[1] end)
+    table.sort(orig, function(a, b) return a[1] < b[1] end)
     local out = { MARK_OPEN .. " (généré — " .. sourceNote .. " ; ne pas éditer à la main)" }
     out[#out + 1] = "    -- où s'obtient le PLAN : [spellID] = \"vendor\" | \"drop\" | \"quest\""
     out[#out + 1] = "    -- (le formateur ne s'écrit pas : il se DÉDUIT de l'absence d'objet-recette)"
@@ -189,16 +208,17 @@ local function renderUnit(kinds, taught, sourceNote, npc)
         out[#out + 1] = string.format("        [%d] = %q,", r[1], r[2])
     end
     out[#out + 1] = "    },"
-    -- Le PNJ qui VEND le plan : [spellID] = { npcID, areaID, "nom anglais" }. La zone se
-    -- résout au runtime (C_Map.GetAreaInfo) ; areaID nil = Wowhead ne la donne pas.
-    out[#out + 1] = "    recipeVendor = {"
-    for _, v in ipairs(vend) do
+    -- QUI est derrière le plan : [spellID] = { id, areaID, "nom anglais" }. Le SENS du triplet
+    -- vient de `recipeSource` ci-dessus : marchand, créature qui le lâche, ou quête (areaID nil).
+    -- La zone se résout au runtime (C_Map.GetAreaInfo) ; areaID nil = aucune zone connue.
+    out[#out + 1] = "    recipeOrigin = {"
+    for _, v in ipairs(orig) do
         out[#out + 1] = string.format("        [%d] = { %d, %s, %q },", v[1], v[2],
             v[3] and tostring(v[3]) or "nil", v[4])
     end
     out[#out + 1] = "    },"
     out[#out + 1] = MARK_CLOSE
-    return table.concat(out, "\n"), #rows, count, #vend
+    return table.concat(out, "\n"), #rows, count, named
 end
 
 local function upsertUnit(content, unit)
@@ -223,7 +243,10 @@ for i = 1, #(arg or {}) do
 end
 local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor))
 
-local tot = { vendor = 0, drop = 0, quest = 0, noItem = 0, noSrc = 0, npc = 0 }
+-- `nVendor/nDrop/nQuest` = les sources qui portent en plus un NOM. L'écart avec `vendor/drop/quest`
+-- est la vraie mesure d'utilité : une nature sans nom ne dit au joueur ni où aller ni qui voir.
+local tot = { vendor = 0, drop = 0, quest = 0, noItem = 0, noSrc = 0,
+              nVendor = 0, nDrop = 0, nQuest = 0 }
 
 for _, prof in ipairs(cfg.profs) do
     local path     = DATA_ROOT .. flavor .. [[\]] .. prof .. ".lua"
@@ -234,20 +257,22 @@ for _, prof in ipairs(cfg.profs) do
     elseif not html then print("SKIP " .. prof .. " (cache " .. htmlPath .. " manquant)")
     else
         local taught, nTaught = taughtBySet(content)
-        local kinds, nSeen, nNoSrc, npc = parseItemKinds(html)
-        local unit, n, count, nVend = renderUnit(kinds, taught, "Wowhead " .. cfg.domain, npc)
+        local kinds, nSeen, nNoSrc, origin = parseItemKinds(html)
+        local unit, n, count, named = renderUnit(kinds, taught, "Wowhead " .. cfg.domain, origin)
         if not check then writeFile(path, upsertUnit(content, unit)) end
         for k in pairs(count) do tot[k] = tot[k] + count[k] end
         tot.noItem = tot.noItem + (nTaught - n)
         tot.noSrc  = tot.noSrc + nNoSrc
-        tot.npc = tot.npc + nVend
-        print(string.format("%-16s objets=%-4d sans-source=%-4d | vendeur=%-4d butin=%-4d quete=%-3d -> %d sorts, %d PNJ",
-            prof, nSeen, nNoSrc, count.vendor, count.drop, count.quest, n, nVend))
+        tot.nVendor, tot.nDrop = tot.nVendor + named.vendor, tot.nDrop + named.drop
+        tot.nQuest = tot.nQuest + named.quest
+        print(string.format("%-16s objets=%-4d sans-source=%-4d | vendeur=%d/%d butin=%d/%d quete=%d/%d -> %d sorts",
+            prof, nSeen, nNoSrc, named.vendor, count.vendor, named.drop, count.drop,
+            named.quest, count.quest, n))
     end
 end
 
-print(string.format("%s (%s) : %d vendeur (dont %d avec le PNJ), %d butin, %d quete. %d objets-recette sans source connue%s.",
-    check and "Mesure" or "Terminé", flavor, tot.vendor, tot.npc, tot.drop, tot.quest, tot.noSrc,
-    check and " (rien écrit)" or ""))
+print(string.format("%s (%s) : %d vendeur, %d butin, %d quete -- dont %d, %d et %d avec un NOM. %d objets-recette sans source connue%s.",
+    check and "Mesure" or "Terminé", flavor, tot.vendor, tot.drop, tot.quest,
+    tot.nVendor, tot.nDrop, tot.nQuest, tot.noSrc, check and " (rien écrit)" or ""))
 print("Rappel : une recette sans objet-recette n'est PAS écrite ici — le fournisseur runtime en")
 print("déduit le formateur, et c'est lui qui doit dire au joueur que c'est une déduction.")

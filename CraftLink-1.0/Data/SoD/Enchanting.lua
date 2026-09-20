@@ -331,7 +331,7 @@ CraftLink:ExtendProfession("Enchanting", {
         [1217189] = "drop",
         [1217203] = "drop",
     },
-    recipeVendor = {
+    recipeOrigin = {
         [435481] = { 217689, 721, "Ziri \\" },
         [435903] = { 217689, 721, "Ziri \\" },
         [463869] = { 12944, 1584, "Lokhtos Darkbargainer" },
@@ -339,6 +339,8 @@ CraftLink:ExtendProfession("Enchanting", {
         [471400] = { 14921, 33, "Rin'wosho the Trader" },
         [1213607] = { 234193, 3428, "Gilded Scarab" },
         [1213610] = { 15419, 1377, "Kania" },
+        [1217189] = { 234193, 3428, "Gilded Scarab" },
+        [1217203] = { 234193, 3428, "Gilded Scarab" },
     },
     -- <<< gen_sources.lua
 })
