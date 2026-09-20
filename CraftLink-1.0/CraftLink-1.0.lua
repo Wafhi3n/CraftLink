@@ -280,6 +280,14 @@ function lib:RecipeVendor(prof, spellID)
     return self:RecipeOrigin(prof, spellID)
 end
 
+-- La NATURE portee par la liste d'origines elle-meme, quand elle a ete DEDUITE de la page de
+-- l'objet ou du sort faute de reponse de la page de metier. nil = la page de metier a repondu (c'est
+-- `RecipeSource` qui fait foi) ou on ne sait rien.
+function lib:RecipeOriginKind(prof, spellID)
+    local list = self:RecipeOrigins(prof, spellID)
+    return list and list.kind or nil
+end
+
 -- OU SE TIENT UN PNJ : uiMapID, x, y (0-100), ou nil. Cle par PNJ et pas par recette -- un marchand
 -- sert des dizaines de plans, et sa position ne depend pas de ce qu'il vend.
 --
@@ -296,7 +304,10 @@ end
 -- confondrait les deux conseillerait d'acheter « gratuitement » un plan qui coûte.
 function lib:RecipePrice(prof, spellID)
     local def = self.professions[prof]
-    return def and def.recipePrice and def.recipePrice[spellID] or nil
+    local p = def and def.recipePrice and def.recipePrice[spellID] or nil
+    -- Un zero n'est pas un prix, c'est une absence de prix EN ARGENT (le plan s'echange contre un
+    -- objet, ou la source ne le dit pas). Le rendre tel quel ferait afficher « Prix : 0 ».
+    return (p and p > 0) and p or nil
 end
 
 -- Durée (secondes) du cooldown d'une recette, ou nil si la recette n'a pas de mécanique de CD.

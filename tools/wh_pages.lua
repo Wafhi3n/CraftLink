@@ -37,13 +37,26 @@ function WH.rows(html, lvid)
 end
 
 -- "A" (Alliance seule) | "H" (Horde seule) | nil (les deux, ou hostile aux deux : une créature).
+--
+-- ⚠️ C'EST `null` QUI PORTE LE SENS, PAS LA VALEUR. `react` vaut [alliance, horde] ; `null` signifie
+-- « ce camp ne peut pas l'atteindre », et le nombre dit seulement l'humeur du PNJ : 1 amical, 0
+-- neutre, -1 hostile. On exigeait `> 0`, donc un marchand NEUTRE (0) passait pour accessible aux
+-- deux -- releve en jeu le 2026-09-20 : Aza'bek, `react=[null,0]`, marchand de la Horde aux Tarides,
+-- etait propose a un joueur de l'Alliance sans le moindre avertissement. Un neutre S'ACHETE chez
+-- lui ; c'est le `null` qui ferme la porte, jamais le 0.
 function WH.side(row)
     local r = row:match('"react":%[([^%]]*)%]')
     if not r then return nil end
     local a, h = r:match("([^,]+),([^,]+)")
-    local na, nh = tonumber(a), tonumber(h)
-    if na and na > 0 and not nh then return "A" end
-    if nh and nh > 0 and not na then return "H" end
+    if not (a and h) then return nil end
+    local function reachable(v)
+        if v == "null" then return false end
+        local n = tonumber(v)
+        return n ~= nil and n >= 0            -- -1 = hostile : une créature, pas un interlocuteur
+    end
+    local aOk, hOk = reachable(a), reachable(h)
+    if aOk and not hOk then return "A" end
+    if hOk and not aOk then return "H" end
     return nil
 end
 
@@ -63,7 +76,13 @@ function WH.soldBy(html)
     local out, price = {}, nil
     for _, row in ipairs(WH.rows(html, "sold-by")) do
         local e = entry(row); if e then out[#out + 1] = e end
-        price = price or tonumber(row:match('"cost":%[%[(%d+)'))
+        -- `cost` a DEUX formes : `[[25]]` (25 pieces de cuivre) et `[0,[[3402,30]]]` (rien en
+        -- argent, mais 30 exemplaires de l'objet 3402). Le premier entier est toujours le prix en
+        -- ARGENT, et un zero veut dire « ne s'achete pas avec de l'or » -- donc inconnu pour nous,
+        -- pas gratuit. On ne le garde pas : un prix de 0 affiche est un mensonge, et c'est
+        -- exactement le defaut que le Plan de route avait deja eu avec son `or 0`.
+        local money = tonumber(row:match('"cost":%[%[?(%d+)'))
+        if money and money > 0 then price = price or money end
     end
     return out, price
 end
