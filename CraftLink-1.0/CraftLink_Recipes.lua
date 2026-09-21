@@ -9,9 +9,15 @@
 -- Le roster des AUTRES joueurs (qui sait quoi) est volontairement HORS de ce module : c'est de
 -- l'annuaire (people), pas du registre (recipes) — il vivra dans le transport/Directory (étape B).
 --
--- Identité d'une recette = spellID. TradeSkill ne donne que l'itemID produit → repli itemToSpell
--- (catalogue). L'Enchantement (API Craft) expose |Henchant:spellID| directement (non capté par
--- craftedItems qui ne matche que |Hitem:|), d'où le scan dédié. Cf. wow-enchanting-craft-api.
+-- Identité d'une recette = spellID. Sur la cible du projet (WoW: Forever / Camelot, API MAINLINE)
+-- ça tombe juste : un `recipeID` de `C_TradeSkillUI` EST un spellID, aucune conversion.
+--
+-- ⚠️ CIBLE UNIQUE depuis le 2026-09-21 : cette lib ne lit plus QUE la fenêtre métier MAINLINE.
+-- Les deux lectures Classic (API TradeSkill par index, API Craft de l'Enchantement) ont été
+-- RETIRÉES : l'Era est gelé (COC branche `era`, v1.30.0), COC n'a plus qu'un `.toc` 16001, et
+-- TradeScanner n'embarque plus CraftLink depuis la v2.0.0 — plus aucun consommateur Era.
+-- Le jour où il en revient un, c'est un BACKEND à rajouter (cf. le patron de
+-- CraftingOrderClassic_Craft_Mainline.lua), pas ces branches-ci à ressusciter.
 
 local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
@@ -20,16 +26,12 @@ if not lib then return end
 -- passer par le gate de version de LibStub:NewLibrary (qui ne protège que le fichier principal). Sans
 -- ce garde, une copie embarquée plus ANCIENNE chargée APRÈS nous écraserait EncodeKnown/ScanOpenKnown/…
 -- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution du codec RK (+ resync hôtes).
-local RECIPES_REV = 2   -- 2 : lecture de la fenêtre métier MAINLINE (recipeID = spellID)
+local RECIPES_REV = 5   -- 5 : `GetAllRecipeIDs` RÉTABLIE (vivante, mesurée) ; 4 : MAINLINE seul
 if (lib._recipesRev or 0) >= RECIPES_REV then return end
 lib._recipesRev = RECIPES_REV
 
 -- État partagé (singleton) : [profCanonical] = { [spellID] = true }
 lib.myKnown = lib.myKnown or {}
-
-local function spellFromLink(link)
-    return link and tonumber(link:match("enchant:(%d+)")) or nil
-end
 
 -- ------------------------------------------------------------------
 -- Persistance (union) vers/depuis la SavedVariables d'un addon hôte
@@ -57,16 +59,20 @@ function lib:SaveMyRecipes(saved)
 end
 
 -- ------------------------------------------------------------------
--- Détection de la fenêtre métier ouverte (Craft API vs TradeSkill API)
+-- Détection de la fenêtre métier ouverte (MAINLINE)
 -- ------------------------------------------------------------------
--- MAINLINE (WoW: Forever) : la fenêtre métier n'a NI `GetTradeSkillLine` NI index de lignes. Elle
--- expose `C_TradeSkillUI`, où un recipeID EST un spellID — donc exactement notre identité de recette.
--- Sans cette branche, `OpenProfession` sortait à vide sur Forever : `myKnown` restait désespérément
--- vide, aucun fil RK n'était émis, et le filtre « ce que CET artisan sait faire » se rabattait sur
--- une ESTIMÉE par niveau (learnedAt) — d'où des recettes réellement connues absentes de la liste
--- (mesuré le 2026-09-19 : deux enchants de bracelet connus à 10/75, donnés apprenables à 20 et 80).
--- ⚠️ `C_TradeSkillUI` existe AUSSI sur l'Era : le discriminant est l'énumérateur MODERNE, jamais la
--- simple présence de la table (même raisonnement que CraftingOrderClassic_Craft_Mainline.lua).
+-- La fenêtre métier de Forever n'a NI `GetTradeSkillLine` NI index de lignes : elle expose
+-- `C_TradeSkillUI`, où un recipeID EST un spellID — exactement notre identité de recette.
+-- ⚠️ `C_TradeSkillUI` existe AUSSI sur l'Era (vide de l'énumérateur moderne) : le discriminant
+-- reste l'ÉNUMÉRATEUR, jamais la simple présence de la table. Sans lui on rend nil, ce qui laisse
+-- l'appelant sans avis — au lieu de prétendre qu'une fenêtre est ouverte et de capter du vide.
+--
+-- `GetAllRecipeIDs` D'ABORD, et ce n'est pas un détail : elle IGNORE les filtres de la fenêtre,
+-- alors que `GetFilteredRecipeIDs` respecte la recherche et les catégories du joueur — capter par
+-- elle rendrait le registre (et les cooldowns) dépendant de ce qu'il a tapé dans la recherche.
+-- Elle est ABSENTE de la doc d'API générée ET du FrameXML, mais VIVANTE sur le client (mesuré par
+-- COCProbe le 2026-09-21, build 69913). Elle avait été retirée le même jour sur la foi de la doc —
+-- une régression, rétablie : la doc générée ne prouve JAMAIS une absence.
 local function modernEnumerator()
     local c = C_TradeSkillUI
     return c and (c.GetAllRecipeIDs or c.GetFilteredRecipeIDs) or nil
@@ -82,79 +88,42 @@ local function modernProfessionName()
 end
 
 -- Recettes APPRISES de la ligne ouverte, en spellID. On EXIGE la preuve (`info.learned == true`,
--- champ vérifié dans Blizzard_ProfessionsCrafting.lua) : `GetAllRecipeIDs` rend aussi les recettes
--- NON apprises, et les diffuser ferait demander à un artisan ce qu'il ne sait pas faire — une
--- erreur bien pire qu'une donnée manquante. Sans `GetRecipeInfo`, on se rabat sur
--- `GetFilteredRecipeIDs`, qui ne rend que l'appris de la ligne ouverte.
+-- champ vérifié dans Blizzard_ProfessionsCrafting.lua).
+--
+-- ⚠️ Les DEUX énumérateurs rendent aussi les recettes NON APPRISES : `GetAllRecipeIDs` par nature,
+-- et `GetFilteredRecipeIDs` parce que `Professions.SetDefaultFilters` (Blizzard_Professions.lua)
+-- pose `SetShowUnlearned(true)` à CHAQUE ouverture de la fenêtre. Le repli qui vivait ici prenait
+-- la liste TELLE QUELLE quand `GetRecipeInfo` manquait, sur l'idée fausse que la liste filtrée ne
+-- contenait que l'appris : il aurait diffusé des recettes que le perso ne connaît pas. Sans
+-- `GetRecipeInfo` on ne peut RIEN prouver — on rend donc un set VIDE. Une donnée manquante vaut
+-- toujours mieux qu'une donnée fausse.
 local function modernKnownSet()
     local c, set = C_TradeSkillUI, {}
-    if not c then return set end
-    if c.GetRecipeInfo then
-        local ok, list = pcall(modernEnumerator())
-        if not (ok and type(list) == "table") then return set end
-        for _, id in ipairs(list) do
-            local ok2, info = pcall(c.GetRecipeInfo, id)
-            if ok2 and type(info) == "table" and info.learned == true then set[id] = true end
-        end
-    elseif c.GetFilteredRecipeIDs then
-        local ok, list = pcall(c.GetFilteredRecipeIDs)
-        if ok and type(list) == "table" then
-            for _, id in ipairs(list) do set[id] = true end
-        end
+    local enum = modernEnumerator()
+    if not (c and enum and c.GetRecipeInfo) then return set end
+    local ok, list = pcall(enum)
+    if not (ok and type(list) == "table") then return set end
+    for _, id in ipairs(list) do
+        local ok2, info = pcall(c.GetRecipeInfo, id)
+        if ok2 and type(info) == "table" and info.learned == true then set[id] = true end
     end
     return set
 end
 
--- Retourne (profCanonical, isCraft, isModern) ou (nil, nil, nil). isCraft = API Craft (Enchantement
--- & co, Classic) ; isModern = fenêtre MAINLINE. Les deux chemins Classic passent EN PREMIER : sur
--- l'Era rien ne change, la branche mainline n'est atteinte que si aucun des deux n'a répondu.
+-- Métier canonique de la fenêtre ouverte, ou nil. Rendait auparavant (prof, isCraft, isModern) :
+-- les deux drapeaux départageaient trois backends, il n'en reste qu'un, ils ne portaient plus
+-- d'information. Les appelants internes ont suivi ; aucun consommateur externe ne l'appelait.
 function lib:OpenProfession()
-    if CraftFrame and CraftFrame:IsShown() then
-        local name = (GetCraftDisplaySkillLine and GetCraftDisplaySkillLine())
-                  or (GetCraftName and GetCraftName())
-        if name and name ~= "" and name ~= "UNKNOWN" then return self:ResolveProfession(name), true end
-    end
-    if GetTradeSkillLine then
-        local name = GetTradeSkillLine()
-        if name and name ~= "" and name ~= "UNKNOWN" then return self:ResolveProfession(name), false end
-    end
     local modern = modernProfessionName()
-    if modern then return self:ResolveProfession(modern), false, true end
-    return nil, nil, nil
+    if not modern then return nil end
+    return self:ResolveProfession(modern)
 end
 
 -- Lit la fenêtre ouverte → (profCanonical, set{spellID=true}). set vide si rien capté.
 function lib:ReadOpenKnown()
-    local prof, isCraft, isModern = self:OpenProfession()
+    local prof = self:OpenProfession()
     if not prof or self:Count(prof) == 0 then return prof, {} end
-    if isModern then return prof, modernKnownSet() end
-    local set = {}
-    if isCraft then
-        local n = (GetNumCrafts and GetNumCrafts()) or 0
-        for i = 1, n do
-            local _, _, ctype = GetCraftInfo(i)
-            if ctype ~= "header" then
-                local sid = spellFromLink(GetCraftItemLink and GetCraftItemLink(i))
-                if sid then set[sid] = true end
-            end
-        end
-    else
-        local n   = (GetNumTradeSkills and GetNumTradeSkills()) or 0
-        local i2s = self:ItemToSpell(prof) or {}
-        for i = 1, n do
-            local _, stype = GetTradeSkillInfo(i)
-            if stype ~= "header" and stype ~= "subheader" then
-                local sid = spellFromLink(GetTradeSkillRecipeLink and GetTradeSkillRecipeLink(i))
-                if not sid then
-                    local link   = GetTradeSkillItemLink and GetTradeSkillItemLink(i)
-                    local itemID = link and tonumber(link:match("item:(%d+)"))
-                    sid = itemID and i2s[itemID] or nil
-                end
-                if sid then set[sid] = true end
-            end
-        end
-    end
-    return prof, set
+    return prof, modernKnownSet()
 end
 
 -- Scan + union dans l'état partagé. Retourne (prof, changed). L'hôte décide quoi faire de

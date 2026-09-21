@@ -1,5 +1,5 @@
 -- CraftLink-1.0 — « MES cooldowns de recettes » : lecture de la fenêtre métier ouverte
--- (GetTradeSkillCooldown), état en mémoire + sérialisation, et codec du fil CD.
+-- (C_TradeSkillUI.GetRecipeCooldown), état en mémoire + sérialisation, et codec du fil CD.
 --
 -- L'API du jeu ne donne le CD que pour SOI et rend nil aussi bien pour « prête » que pour
 -- « sans mécanique de CD » : on ne suit donc QUE les spellID de la table curatée
@@ -13,7 +13,7 @@ if not lib then return end
 
 -- Anti-clobber (même logique que CraftLink_Recipes) : compagnon re-patché hors du gate
 -- LibStub. BUMP à chaque évolution du codec CD (+ resync hôtes).
-local COOLDOWNS_REV = 2   -- 2 : lecture des CD sur la fenêtre métier MAINLINE
+local COOLDOWNS_REV = 5   -- 5 : `GetAllRecipeIDs` RÉTABLIE (vivante, mesurée) ; 4 : MAINLINE seul
 if (lib._cooldownsRev or 0) >= COOLDOWNS_REV then return end
 lib._cooldownsRev = COOLDOWNS_REV
 
@@ -25,10 +25,6 @@ local STALE_AFTER = 14 * 86400                  -- purge d'un readyAt dépassé 
 local REMAIN_CAP  = 864000                      -- restant max accepté sur le fil : 10 j
 local MAX_ENTRIES = 40                          -- entrées max par message CD (anti-junk)
 local WIRE_CAP    = 230                         -- taille max d'un payload (AddonMessage ≤ 255)
-
-local function spellFromLink(link)
-    return link and tonumber(link:match("enchant:(%d+)")) or nil
-end
 
 -- ------------------------------------------------------------------
 -- Persistance vers/depuis la SavedVariables d'un addon hôte (partition PAR PERSO côté hôte)
@@ -69,65 +65,38 @@ end
 -- Lecture de la fenêtre métier ouverte
 -- ------------------------------------------------------------------
 -- → (profCanonical, { [spellID] = restant en s, 0 = prête }) pour les seules recettes
--- cataloguées à CD, ou (prof, nil) si le métier n'en a pas / API absente. Même résolution
--- de spellID que ReadOpenKnown. GetCraftCooldown (API Craft) n'existe qu'à partir du
--- client TBC — gated : en Vanilla l'Enchantement n'a de toute façon aucune recette à CD.
+-- cataloguées à CD, ou (prof, nil) si le métier n'en a pas / API absente.
+--
+-- ⚠️ MAINLINE SEUL depuis le 2026-09-21 (cf. l'en-tête de CraftLink_Recipes) : les deux boucles
+-- Classic ont été retirées. Un recipeID EST un spellID, et `C_TradeSkillUI.GetRecipeCooldown` rend
+-- le restant — nil = pas de CD en cours, donc recette PRÊTE (0), jamais « pas d'avis ».
+-- Cette fonction est ABSENTE de la doc d'API générée du client, mais Blizzard l'appelle dans son
+-- propre Blizzard_Professions (1.60.1) : elle existe. La doc générée ne prouve pas une absence.
+-- Énumération par `GetAllRecipeIDs` d'abord (vivante, mesurée) : elle ignore la recherche et les
+-- catégories du joueur — sinon une transmutation hors filtre sortirait du relevé des CD.
 function lib:ReadOpenCooldowns()
     if not self.OpenProfession then return nil, nil end   -- compagnon Recipes absent (lib partielle)
-    local prof, isCraft, isModern = self:OpenProfession()
+    local prof = self:OpenProfession()
     if not prof then return nil, nil end
     local cds = self:CooldownRecipes(prof)
     if not cds then return prof, nil end
+    local c   = C_TradeSkillUI
+    local get = c and (c.GetAllRecipeIDs or c.GetFilteredRecipeIDs)
+    if not (get and c.GetRecipeCooldown) then return prof, nil end
+    local ok, list = pcall(get)
+    if not (ok and type(list) == "table") then return prof, nil end
     local out = {}
-    -- MAINLINE (WoW: Forever) : même angle mort que ReadOpenKnown — `GetNumTradeSkills` n'existe pas,
-    -- la boucle Classic tournait donc zéro fois et rendait un jeu VIDE, sans erreur : aucun cooldown
-    -- n'était jamais capturé ni diffusé sur la cible du projet. Ici un recipeID EST un spellID, et
-    -- `C_TradeSkillUI.GetRecipeCooldown` rend le restant (nil = pas de CD en cours ⇒ prête = 0).
-    if isModern then
-        local c = C_TradeSkillUI
-        local get = c and (c.GetAllRecipeIDs or c.GetFilteredRecipeIDs)
-        if not (get and c.GetRecipeCooldown) then return prof, nil end
-        local ok, list = pcall(get)
-        if not (ok and type(list) == "table") then return prof, nil end
-        for _, sid in ipairs(list) do
-            if cds[sid] then
-                local ok2, remain = pcall(c.GetRecipeCooldown, sid)
-                out[sid] = (ok2 and tonumber(remain)) or 0
-            end
-        end
-        return prof, out
-    end
-    if isCraft then
-        if not GetCraftCooldown then return prof, nil end
-        local n = (GetNumCrafts and GetNumCrafts()) or 0
-        for i = 1, n do
-            local _, _, ctype = GetCraftInfo(i)
-            if ctype ~= "header" then
-                local sid = spellFromLink(GetCraftItemLink and GetCraftItemLink(i))
-                if sid and cds[sid] then out[sid] = GetCraftCooldown(i) or 0 end
-            end
-        end
-    else
-        local n   = (GetNumTradeSkills and GetNumTradeSkills()) or 0
-        local i2s = self:ItemToSpell(prof) or {}
-        for i = 1, n do
-            local _, stype = GetTradeSkillInfo(i)
-            if stype ~= "header" and stype ~= "subheader" then
-                local sid = spellFromLink(GetTradeSkillRecipeLink and GetTradeSkillRecipeLink(i))
-                if not sid then
-                    local link   = GetTradeSkillItemLink and GetTradeSkillItemLink(i)
-                    local itemID = link and tonumber(link:match("item:(%d+)"))
-                    sid = itemID and i2s[itemID] or nil
-                end
-                if sid and cds[sid] then out[sid] = GetTradeSkillCooldown(i) or 0 end
-            end
+    for _, sid in ipairs(list) do
+        if cds[sid] then
+            local ok2, remain = pcall(c.GetRecipeCooldown, sid)
+            out[sid] = (ok2 and tonumber(remain)) or 0
         end
     end
     return prof, out
 end
 
 -- Scan + mise à jour de l'état. Retourne (prof, changed) ; l'hôte décide (sauver SV, diffuser).
--- Tolérance 90 s : GetTradeSkillCooldown fluctue d'une lecture à l'autre, on ne « change »
+-- Tolérance 90 s : le restant lu fluctue d'une lecture à l'autre, on ne « change »
 -- que sur un vrai mouvement. Une recette PRÊTE garde son readyAt d'origine (pas de re-stamp
 -- à chaque scan, sinon fausses annonces en boucle).
 function lib:ScanOpenCooldowns(now)

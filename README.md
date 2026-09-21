@@ -1,7 +1,14 @@
 # CraftLink-1.0
 
-Librairie **embarquée** (LibStub) — infrastructure partagée des addons de craft WoW Classic Era.
+Librairie **embarquée** (LibStub) — infrastructure partagée des addons de craft.
 Source canonique unique ; **pas un addon installé séparément**.
+
+> **Cible unique : WoW: Forever / Camelot** (API MAINLINE, interface 16001) depuis le 2026-09-21.
+> La lecture de la fenêtre métier (`CraftLink_Recipes`, `CraftLink_Cooldowns`) ne passe plus que
+> par `C_TradeSkillUI` ; les lectures Classic Era (API TradeSkill par index, API Craft de
+> l'Enchantement) ont été **retirées** — l'Era est gelé et plus aucun consommateur ne l'embarque.
+> Les données Vanilla/TBC/Wrath de `Data/` restent (catalogues figés), seule la LECTURE du client a
+> perdu ses branches Classic. Y revenir = ajouter un backend, pas rouvrir ces branches.
 
 ## Ce qu'elle fournit (infra générique seulement)
 
