@@ -38,8 +38,9 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 
 ## Ce qu'on veut
 
-1. **Une cadence.** Rafraîchir la base est un geste régulier de la bêta, pas un chantier. On sait
-   quand on le fait, ce qu'on regarde avant d'appliquer, et ce qui part chez les joueurs.
+1. **Une cadence tenue** : une passe par semaine pendant la bêta, une passe par patch une fois en
+   live. On sait quand on le fait, ce qu'on regarde avant d'appliquer, et ce qui part chez les
+   joueurs.
 2. **Ce qu'on voit en jeu finit dans la base.** Le formateur, le niveau requis, le PNJ, le prix
    affiché : le client les connaît, le site non. Ce chemin existe pour les origines ; il doit couvrir
    **les niveaux d'apprentissage**, aujourd'hui absents pour Camelot (`gen_metadata` n'a jamais tourné
@@ -81,16 +82,21 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 - 2026-09-22, agent (à confirmer) — un trou se **dit** plutôt que de se combler par défaut. Appliqué
   aux niveaux inconnus dans la vue Manquantes de COC le jour même.
 
+- 2026-09-22, user — **cadence : une passe par SEMAINE pendant la bêta, une passe par PATCH une fois
+  le jeu en live.** Le rafraîchissement suit le rythme auquel le monde change, pas celui de nos
+  releases : une passe hebdomadaire qui ne produit rien est un résultat, pas un échec.
+- 2026-09-22, user — **les niveaux d'apprentissage viennent des DEUX chemins** : la génération
+  (`gen_metadata.lua`, qui n'a jamais tourné sur Camelot) ET la moisson en jeu chez le formateur.
+  Ils se complètent au lieu de se choisir, comme les origines le font déjà avec `observed_<Saveur>`.
+
 ### Décisions ouvertes, à trancher par le user
 
-1. **Cadence.** Rafraîchir à chaque release d'addon, ou publier des releases « données » à part quand
-   la dérive le justifie ?
-2. **Niveaux d'apprentissage.** Les récolter en jeu chez le formateur (sa fenêtre donne le niveau
-   requis de chaque service, et COC moissonne déjà ce qu'il enseigne), ou faire tourner
-   `gen_metadata.lua` sur Camelot, ou les deux — et lequel fait foi en cas de désaccord ?
-3. **Données venues des autres joueurs.** Jamais, ou un jour avec un modèle de confiance explicite ?
-   Cette réponse décide de la forme de tout le reste.
-4. **Runtime contre paquet.** Quand le client sait quelque chose que la base ignore (niveau vu chez
+1. **Lequel fait foi** quand la génération et la moisson donnent deux niveaux différents pour la même
+   recette ? (Proposition de l'agent : la moisson, parce qu'elle vient du client lui-même — c'est
+   déjà la règle pour la nature, où `recipeSource` fait foi.)
+2. **Données venues des autres joueurs.** Jamais, ou un jour avec un modèle de confiance explicite ?
+   Cette réponse décide de la forme de tout le reste, et elle vaut aussi pour les prix.
+3. **Runtime contre paquet.** Quand le client sait quelque chose que la base ignore (niveau vu chez
    un formateur), COC s'en sert-il **tout de suite** pour l'affichage du joueur, ou attend-il que le
    fait soit passé par le pipeline et republié ?
 
