@@ -142,6 +142,8 @@ CraftLink:RegisterProfession("Mining", {
         [10097] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 8128, 440, "Pikkle", nil } },
         [10098] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [16153] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [1230161] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
+        [1249637] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [1306126] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.

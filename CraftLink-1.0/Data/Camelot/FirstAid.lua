@@ -238,6 +238,12 @@ CraftLink:RegisterProfession("First Aid", {
         [23787] = { { 10856, 85, "Argent Quartermaster Hasana", nil }, { 10857, 28, "Argent Quartermaster Lightspark", nil } },
         [470349] = { { 17068, 1377, "Chief Expeditionary Requisitioner Enkles", "A" }, { 17070, 1377, "Apothecary Quinard", "H" } },
         [1230117] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1244431] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1244432] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1244433] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1244436] = { kind = "vendor", { 266901, 616, "Pexmit", nil } },
+        [1259342] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1259347] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
     recipePrice = {
@@ -245,6 +251,7 @@ CraftLink:RegisterProfession("First Aid", {
         [10840] = 5000,
         [23787] = 105882,
         [470349] = 110000,
+        [1244436] = 80000,
     },
     npcSpot = {
         [2411] = { 1416, 19.4, 84.8 },
@@ -259,7 +266,9 @@ CraftLink:RegisterProfession("First Aid", {
         [17068] = { 1451, 33.2, 51.0 },
         [17070] = { 1451, 50.8, 69.4 },
         [251977] = { 1416, 17.2, 61.0 },
+        [257007] = { 2521, 63.0, 72.4 },
         [257018] = { 2521, 43.0, 46.2 },
+        [266901] = { 2482, 59.6, 49.2 },
     },
     -- <<< gen_origins.lua
 })
