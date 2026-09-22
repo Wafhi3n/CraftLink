@@ -27,7 +27,10 @@ param(
     # items = pages d'objet | spells = pages de sort (les FORMATEURS) | npcs = positions de carte.
     # Les trois s'enchainent dans cet ordre : chaque passe alimente la suivante (les PNJ a visiter
     # ne sont connus qu'une fois les origines lues).
-    [ValidateSet("items","spells","npcs")]
+    # stale = REPRENDRE les pages objet/sort deja en cache mais MUETTES (ni marchand, ni butin, ni
+    # quete, ni formateur) : Wowhead se remplit par observation, une page vide ne l'est pas pour
+    # toujours. Ces pages-la sont retelechargees meme presentes ; puis relancer -Phase npcs.
+    [ValidateSet("items","spells","npcs","stale")]
     [string] $Phase  = "items",
     [int]    $Max    = 0,
     [double] $Delay  = 2.0,
@@ -42,7 +45,7 @@ $Lua  = Join-Path (Split-Path $Root -Parent) "tools\elune\bin\lua.exe"
 if (-not (Test-Path $Lua)) { Write-Host "ERREUR: Elune lua.exe introuvable: $Lua" -ForegroundColor Red; exit 1 }
 Set-Location $Root
 
-$flag = @{ items = "-urls"; spells = "-urls-spells"; npcs = "-urls-npcs" }[$Phase]
+$flag = @{ items = "-urls"; spells = "-urls-spells"; npcs = "-urls-npcs"; stale = "-urls-stale" }[$Phase]
 $lines = & $Lua "tools\gen_origins.lua" $Flavor $flag
 if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: gen_origins -urls a echoue." -ForegroundColor Red; exit 1 }
 
@@ -53,7 +56,9 @@ foreach ($line in $lines) {
     if (-not $line) { continue }
     $parts = $line -split "`t", 2
     if ($parts.Count -ne 2) { continue }
-    if ((-not $Force) -and (Test-Path $parts[0])) { continue }
+    # stale : la liste ne contient QUE des pages a reprendre -- les sauter parce qu'elles sont en
+    # cache viderait la passe de son sens.
+    if ((-not $Force) -and $Phase -ne "stale" -and (Test-Path $parts[0])) { continue }
     $todo += ,@($parts[0], $parts[1])
 }
 if ($Max -gt 0 -and $todo.Count -gt $Max) { $todo = $todo[0..($Max - 1)] }

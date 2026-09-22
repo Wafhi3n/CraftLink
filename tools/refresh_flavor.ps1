@@ -114,9 +114,18 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: noms canoniques d'enchants echoue
 & $Lua "tools\gen_sources.lua" $Flavor
 if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: natures de source echouees." -ForegroundColor Red; exit 1 }
 
+# QUI est derriere le plan (PNJ, camp, prix, position) : meme bloc sentinelle efface, meme rejeu.
+# APRES gen_sources, qu'il lit pour savoir quel onglet de la page d'objet regarder. Il relit le
+# cache tel quel -- aucune requete ici ; une recette NOUVELLE n'a pas encore sa page, elle se prend
+# avec fetch_items.ps1 (items, spells, npcs) puis une relance de gen_origins.lua.
+# Oublie jusqu'au 2026-09-22 : chaque -Apply effacait les ~740 origines sans un mot.
+& $Lua "tools\gen_origins.lua" $Flavor
+if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: origines des plans echouees." -ForegroundColor Red; exit 1 }
+
 & $Lua "tools\check_dataversion.lua"
 
 Write-Host "`nApplique. Reste a faire, dans l'ordre :" -ForegroundColor Green
+Write-Host "  0. .\tools\fetch_items.ps1 -Phase items|spells|npcs  puis gen_origins.lua (recettes NOUVELLES)"
 Write-Host "  1. .\sync-libs.ps1            (pousser la lib dans les addons hotes)"
 Write-Host "  2. ..\scripts\check_lua.ps1   (parite des .toc + Lua 5.1)"
 Write-Host "  3. relire le diff git AVANT de commiter -- ces donnees viennent d'un site tiers."

@@ -139,20 +139,25 @@ end
 -- On prend les coordonnées de l'aire DEMANDÉE quand elle y est (un PNJ apparaît parfois dans
 -- plusieurs zones), sinon la première venue, et la PREMIÈRE de ses positions : un marchand en a
 -- souvent trois à quelques pas les unes des autres.
-function WH.spot(html, areaID)
+-- Rend AUSSI l'AreaID du spawn retenu : une entrée vue en jeu n'a qu'un uiMapID, et c'est ici
+-- qu'on retrouve la zone à afficher. `uiMapHint` (la carte de la relève) départage les PNJ à
+-- plusieurs spawns quand on n'a pas d'AreaID : sans lui, le premier venu gagnait.
+function WH.spot(html, areaID, uiMapHint)
     local blob = html:match("var g_mapperData = (%b{})")
     if not blob then return nil end
-    local pick
+    local pick, pickArea, byMap, byMapArea
     for area, body in blob:gmatch('"(%d+)":(%b[])') do
         local uiMap = tonumber(body:match('"uiMapId":(%d+)'))
         local x, y = body:match('"coords":%[%[([%d%.%-]+),([%d%.%-]+)%]')
         if uiMap and x and y then
-            local cand = { uiMap, tonumber(x), tonumber(y) }
-            if tonumber(area) == areaID then return cand end
-            pick = pick or cand
+            local cand, a = { uiMap, tonumber(x), tonumber(y) }, tonumber(area)
+            if a == areaID then return cand, a end
+            if uiMapHint and uiMap == uiMapHint and not byMap then byMap, byMapArea = cand, a end
+            if not pick then pick, pickArea = cand, a end
         end
     end
-    return pick
+    if byMap then return byMap, byMapArea end
+    return pick, pickArea
 end
 
 return WH

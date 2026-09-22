@@ -45,7 +45,18 @@ plus jamais être régénéré.
   objet** : la page de métier ne donne qu'UN nom, sans sa faction — pour « Recipe: Gingerbread
   Cookie » c'était Wulmort Jinglepocket, à Forgefer, pour tout le monde, y compris la Horde.
   `fetch_items.ps1` télécharge (cache conservé, pages déjà là sautées, `-Max N` pour un essai) puis
-  `gen_origins.lua <Saveur>` écrit. **À lancer APRÈS `gen_sources.lua`** : il lit `recipeSource` pour
+  `gen_origins.lua <Saveur>` écrit. **`-Phase stale`** reprend les pages déjà en cache mais MUETTES
+  (ni marchand, ni butin, ni quête, ni formateur) : pendant la bêta Wowhead se remplit par
+  observation, une page vide un jour ne l'est plus deux jours après — puis `-Phase npcs` pour les
+  positions des PNJ nouvellement cités. `refresh_flavor.ps1 -Apply` rejoue `gen_origins.lua` sur le
+  cache (depuis le 2026-09-22 ; avant, chaque `-Apply` effaçait les origines).
+- `import_observed.ps1` / `import_observed.lua` + `observed.lua` — ce qu'on a VU EN JEU (COCScout :
+  marchands, positions, formateurs par PNJ ; COC : formateurs moissonnés), lu dans les
+  SavedVariables de TOUS les comptes du client et fusionné dans `Curated/observed_<Saveur>.lua`
+  (commité ; il accumule, ne retire jamais). `gen_origins.lua` le relit à chaque passe et ne s'en
+  sert que là où Wowhead se tait, et seulement si la nature concorde avec `recipeSource` — sinon
+  il affiche `CONFLIT` et n'écrit rien. À lancer après chaque session de jeu : une SavedVariable
+  s'efface à la réinstallation, le fichier curé non. Test : `tests/test_observed.lua`. **À lancer APRÈS `gen_sources.lua`** : il lit `recipeSource` pour
   savoir quelle liste de la page regarder. Quand une page manque du cache, on retombe sur le nom que
   la page de métier donnait — sans faction, donc marqué comme inconnu.
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque

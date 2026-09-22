@@ -26,6 +26,7 @@
 --
 -- Usage (cwd = f:\AddonDevellopement\CraftLink) :
 --   lua tools\gen_origins.lua Camelot -urls    # les pages à télécharger (cf. fetch_items.ps1)
+--   lua tools\gen_origins.lua Camelot -urls-stale  # les pages MUETTES ou absentes, à reprendre
 --   lua tools\gen_origins.lua Camelot -check   # mesurer la couverture, ne rien écrire
 --   lua tools\gen_origins.lua Camelot          # écrire recipeOrigin + recipePrice
 
@@ -166,6 +167,71 @@ local function fromSpell(html)
     return list, nil, "trainer"
 end
 
+-- CE QU'ON A VU EN JEU (tools/Curated/observed_<Saveur>.lua, tenu par import_observed.ps1). Il ne
+-- sert QUE là où Wowhead se tait : une personne sur un serveur de bêta ne réécrit pas ce que des
+-- milliers d'observations ont établi. Rend `liste, prix, nature, conflit`.
+--
+-- ⚠️ LA NATURE DOIT CONCORDER. Au runtime `recipeSource` fait foi et `kind` ne sert que quand il
+-- se tait (lib:RecipeOriginKind) : un marchand vu, écrit sous une nature « drop » étalonnée, serait
+-- présenté comme une créature à tuer. Dans ce cas on n'écrit RIEN et on le dit -- à un humain de
+-- trancher entre la page de métier et ce qu'il a vu.
+local function observedPrice(obs, itemID)
+    local best
+    for _, e in ipairs((itemID and obs.vendor[itemID]) or {}) do
+        if e[5] and (not best or e[5] < best) then best = e[5] end
+    end
+    return best
+end
+
+-- `observed` marque l'entrée VUE en jeu (non rendu) : elle seule peut recevoir la zone ou le camp
+-- que Wowhead donne pour le même PNJ ailleurs -- une entrée Wowhead sans camp, elle, dit « neutre ».
+local function copyEntries(list)
+    local out = {}
+    for i, e in ipairs(list) do out[i] = { e[1], e[2], e[3], e[4], observed = true } end
+    return out
+end
+
+-- Ce que Wowhead dit d'un PNJ AILLEURS dans le métier (zone, camp) complète son entrée VUE en jeu,
+-- et elle seule : une entrée Wowhead sans camp dit « neutre », pas « inconnu ». Les QUÊTES sont
+-- exclues des deux côtés : leurs identifiants recoupent ceux des PNJ -- la quête 2763 « The Art of
+-- the Imbue » a hérité de la zone du PNJ 2763 au premier essai.
+local function fillObserved(origins, kind, pageArea)
+    local function each(fn)
+        for sid, list in pairs(origins) do
+            if kind[sid] ~= "quest" and list.kind ~= "quest" then
+                for _, e in ipairs(list) do fn(e) end
+            end
+        end
+    end
+    local known = {}
+    each(function(e)
+        if e.observed then return end
+        local k = known[e[1]] or {}
+        k.area, k.side = k.area or e[2], k.side or e[4]
+        known[e[1]] = k
+    end)
+    each(function(e)
+        if not e.observed then return end
+        local k = known[e[1]] or {}
+        e[2] = e[2] or k.area or pageArea[e[1]]
+        e[4] = e[4] or k.side
+    end)
+end
+
+local function fromObserved(obs, sid, itemID, k)
+    local seenT = obs.trainer[sid]
+    if seenT and #seenT > 0 then
+        if not k then return keepBothSides(copyEntries(seenT)), nil, "trainer" end
+        return {}, nil, nil, "formateur vu en jeu, la page de metier dit " .. k
+    end
+    local seenV = itemID and obs.vendor[itemID]
+    if seenV and #seenV > 0 then
+        if k and k ~= "vendor" then return {}, nil, nil, "marchand vu en jeu, la page de metier dit " .. k end
+        return keepBothSides(copyEntries(seenV)), observedPrice(obs, itemID), "vendor"
+    end
+    return {}, nil, nil
+end
+
 -- ------------------------------------------------------------------
 -- Rendu
 -- ------------------------------------------------------------------
@@ -242,12 +308,15 @@ end
 local flavor, mode = "Camelot", nil
 for i = 1, #(arg or {}) do
     if arg[i] == "-urls" or arg[i] == "-check" or arg[i] == "-urls-spells"
-        or arg[i] == "-urls-npcs" then mode = arg[i]
+        or arg[i] == "-urls-npcs" or arg[i] == "-urls-stale" then mode = arg[i]
     elseif arg[i] then flavor = arg[i] end
 end
 local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor))
+-- Relu à CHAQUE passe : c'est ce qui fait qu'aucune régénération ne perd ce qu'on a vu en jeu.
+local obs = dofile("tools/observed.lua").load([[tools\Curated\observed_]] .. flavor .. ".lua")
 
-local tot = { want = 0, have = 0, named = 0, legacy = 0, price = 0, empty = 0, spot = 0, trainer = 0 }
+local tot = { want = 0, have = 0, named = 0, legacy = 0, price = 0, empty = 0, spot = 0, trainer = 0,
+              observed = 0 }
 local SPELL_DIR = [[tools\wh\spells\]]
 local NPC_DIR   = [[tools\wh\npcs\]]
 local urls = (mode or ""):find("^%-urls")
@@ -260,7 +329,7 @@ for _, prof in ipairs(cfg.profs) do
     else
         local items, kind, legacy = itemOf(content), kinds(content), legacyOrigin(content)
         local origins, prices, spots = {}, {}, {}
-        local have, named, fromLegacy, empty, nTrainer = 0, 0, 0, 0, 0
+        local have, named, fromLegacy, empty, nTrainer, nObs = 0, 0, 0, 0, 0, 0
         -- /!\ ON PARCOURT TOUTES LES RECETTES, pas seulement celles qui ont deja une nature ou
         -- un objet. N'aller chercher que les pages des recettes classees fermait la boucle : il
         -- fallait une nature pour decider d'ouvrir la page, et la page etait le seul endroit ou
@@ -275,6 +344,20 @@ for _, prof in ipairs(cfg.profs) do
                 print(cache .. "\t" .. "https://www.wowhead.com/" .. cfg.domain .. "/item=" .. itemID)
             elseif mode == "-urls-spells" and not itemID then
                 print(cache .. "\t" .. "https://www.wowhead.com/" .. cfg.domain .. "/spell=" .. sid)
+            elseif mode == "-urls-stale" then
+                -- Les pages MUETTES, a reprendre. Une page en cache n'est pas une page a jour :
+                -- Wowhead se remplit par observation, et une page vide le 20 cite un formateur le
+                -- 22 (mesure sur 1244431). Sans ce mode, fetch_items sautait toute page deja
+                -- presente, et le seul autre choix etait -Force sur les 2500.
+                local html = readFile(cache)
+                local list = {}
+                if html then
+                    if itemID then list = fromItem(k, html) else list = fromSpell(html) end
+                end
+                if #list == 0 then
+                    local what = itemID and ("item=" .. itemID) or ("spell=" .. sid)
+                    print(cache .. "\t" .. "https://www.wowhead.com/" .. cfg.domain .. "/" .. what)
+                end
             elseif (not urls) or mode == "-urls-npcs" then
                 -- `-urls-npcs` doit LIRE les pages deja prises pour savoir QUELS PNJ citer :
                 -- la liste des PNJ n'existe nulle part ailleurs que dans les origines.
@@ -295,12 +378,25 @@ for _, prof in ipairs(cfg.profs) do
                 elseif legacy[sid] then
                     origins[sid] = { legacy[sid] }; fromLegacy = fromLegacy + 1
                 end
+                -- Wowhead s'est tu : ce qu'on a vu en jeu, si la nature concorde.
+                if not origins[sid] then
+                    local list, price, found, clash = fromObserved(obs, sid, itemID, k)
+                    if #list > 0 then
+                        if not k then list.kind = found end
+                        origins[sid] = list; nObs = nObs + 1
+                        if price and not prices[sid] then prices[sid] = price end
+                    elseif clash and not urls then
+                        print(string.format("  CONFLIT %s %d : %s -- rien ecrit", prof, sid, clash))
+                    end
+                elseif itemID and not prices[sid] and (k or origins[sid].kind) == "vendor" then
+                    prices[sid] = observedPrice(obs, itemID)   -- nil si jamais vu en rayon
+                end
             end
         end
         -- Les POSITIONS, une page par PNJ cite : un marchand sert des dizaines de plans, il ne
         -- se telecharge qu'une fois. Les quetes n'ont pas de page de PNJ, on les saute.
         if mode == "-urls-npcs" or not urls then
-            local seen = {}
+            local seen, pageArea = {}, {}
             for sid, list in pairs(origins) do
                 local isQuest = (kind[sid] == "quest") or (list.kind == "quest")
                 if not isQuest then
@@ -312,16 +408,29 @@ for _, prof in ipairs(cfg.profs) do
                             if mode == "-urls-npcs" then
                                 print(c .. "\t" .. "https://www.wowhead.com/" .. cfg.domain .. "/npc=" .. id)
                             else
+                                -- Sans AreaID (entrée VUE en jeu), la page ne sait pas quel spawn
+                                -- choisir : la relève prime, et la page ne donne que l'AreaID --
+                                -- à condition que son spawn soit sur la même carte.
+                                local o = obs.spot[id]
                                 local h = readFile(c)
-                                local sp = h and WH.spot(h, e[2])
+                                local sp, area
+                                if h then sp, area = WH.spot(h, e[2], o and o[1]) end
+                                if o and (not e[2] or not sp) then
+                                    if area and sp and sp[1] ~= o[1] then area = nil end
+                                    sp = { o[1], o[2], o[3] }
+                                end
                                 if sp then spots[id] = sp end
+                                -- L'AreaID de la page ne sert qu'à un PNJ VU (même carte, vérifié
+                                -- ci-dessus) : sans relève, ce serait le premier spawn venu.
+                                if o and area then pageArea[id] = area end
                             end
                         end
                     end
                 end
             end
+            if not urls then fillObserved(origins, kind, pageArea) end
         end
-        tot.trainer = tot.trainer + nTrainer
+        tot.trainer, tot.observed = tot.trainer + nTrainer, tot.observed + nObs
         for _ in pairs(spots) do tot.spot = tot.spot + 1 end
         if not urls then
             tot.have, tot.named = tot.have + have, tot.named + named
@@ -331,15 +440,15 @@ for _, prof in ipairs(cfg.profs) do
                 prices, spots, "Wowhead " .. cfg.domain .. ", pages objet/sort/PNJ"))) end
             local nSpot = 0; for _ in pairs(spots) do nSpot = nSpot + 1 end
             local nPrice = 0; for _ in pairs(prices) do nPrice = nPrice + 1 end
-            print(string.format("%-16s pages=%-4d nommees=%-4d (formateur=%-3d repli=%-3d muettes=%-3d) prix=%-3d positions=%d",
-                prof, have, named, nTrainer, fromLegacy, empty, nPrice, nSpot))
+            print(string.format("%-16s pages=%-4d nommees=%-4d (formateur=%-3d repli=%-3d muettes=%-3d) vues-en-jeu=%-3d prix=%-3d positions=%d",
+                prof, have, named, nTrainer, fromLegacy, empty, nObs, nPrice, nSpot))
         end
     end
 end
 
 if not urls then
-    print(string.format("%s (%s) : %d recettes, %d pages lues -> %d nommees (dont %d formateur), %d repli, %d muettes, %d prix, %d positions%s",
+    print(string.format("%s (%s) : %d recettes, %d pages lues -> %d nommees (dont %d formateur), %d repli, %d muettes dont %d comblees par ce qu'on a vu en jeu, %d prix, %d positions%s",
         (mode == "-check") and "Mesure" or "Termine", flavor, tot.want, tot.have, tot.named,
-        tot.trainer, tot.legacy, tot.empty, tot.price, tot.spot,
+        tot.trainer, tot.legacy, tot.empty, tot.observed, tot.price, tot.spot,
         (mode == "-check") and " (rien ecrit)" or ""))
 end
