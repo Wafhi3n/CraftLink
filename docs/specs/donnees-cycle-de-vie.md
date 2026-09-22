@@ -55,10 +55,10 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 
 - **Pas de téléchargement en jeu.** Un addon ne lit aucun fichier et ne fait aucune requête réseau
   vers l'extérieur. La base arrive par le paquet, point.
-- **Pas de données venues des AUTRES joueurs** — en tout cas pas dans cette spec. Le transport
-  CraftLink porte des recettes connues et des ordres, pas des faits de monde. Accepter qu'un
-  inconnu écrive dans notre base de données ouvrirait une surface de confiance qu'on n'a pas
-  étudiée. **À trancher (voir Décisions ouvertes).**
+- **Pas de données venues des AUTRES joueurs. Jamais** (décision du user, 2026-09-22). Le transport
+  CraftLink porte des recettes connues et des ordres, pas des faits de monde : un fait forgé par un
+  inconnu enverrait un joueur acheter au mauvais endroit, au mauvais prix. Les sources sont Wowhead,
+  notre propre addon, et Auctionator pour les prix.
 - **Pas de secours par les données d'une autre saveur** (SoD pour combler Camelot) : refusé par le
   user, on attend Wowhead.
 - **Pas de déduction là où il n'y a qu'une absence.** Le formateur ne se déduit pas d'un objet-plan
@@ -85,6 +85,9 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 - 2026-09-22, user — **cadence : une passe par SEMAINE pendant la bêta, une passe par PATCH une fois
   le jeu en live.** Le rafraîchissement suit le rythme auquel le monde change, pas celui de nos
   releases : une passe hebdomadaire qui ne produit rien est un résultat, pas un échec.
+- 2026-09-22, user — **rien ne vient des autres joueurs.** Wowhead et notre propre addon pour la
+  base, Auctionator pour les prix de marché. Cette réponse ferme la question la plus structurante
+  des deux specs.
 - 2026-09-22, user — **les niveaux d'apprentissage viennent des DEUX chemins** : la génération
   (`gen_metadata.lua`, qui n'a jamais tourné sur Camelot) ET la moisson en jeu chez le formateur.
   Ils se complètent au lieu de se choisir, comme les origines le font déjà avec `observed_<Saveur>`.
@@ -94,9 +97,7 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 1. **Lequel fait foi** quand la génération et la moisson donnent deux niveaux différents pour la même
    recette ? (Proposition de l'agent : la moisson, parce qu'elle vient du client lui-même — c'est
    déjà la règle pour la nature, où `recipeSource` fait foi.)
-2. **Données venues des autres joueurs.** Jamais, ou un jour avec un modèle de confiance explicite ?
-   Cette réponse décide de la forme de tout le reste, et elle vaut aussi pour les prix.
-3. **Runtime contre paquet.** Quand le client sait quelque chose que la base ignore (niveau vu chez
+2. **Runtime contre paquet.** Quand le client sait quelque chose que la base ignore (niveau vu chez
    un formateur), COC s'en sert-il **tout de suite** pour l'affichage du joueur, ou attend-il que le
    fait soit passé par le pipeline et republié ?
 
