@@ -49,13 +49,15 @@ local CURATED_OBS = [[tools\Curated\observed_%s.lua]]
 -- tous les trois parce que c'est la seule facon de savoir ce que la recolte apporte vraiment :
 --   comble    : Wowhead se tait, l'observation parle       -> on ecrit l'observation
 --   confirme  : les deux parlent et disent la meme chose   -> on n'ecrit rien de neuf
---   CONFLIT   : les deux parlent et se contredisent        -> on garde WOWHEAD et on le CRIE
--- Le conflit ne se tranche pas en silence : une observation isolee peut venir d'une fenetre de
--- formateur filtree ou d'un mauvais aiguillage de metier, et une donnee livree a des milliers de
--- clients ne bascule pas sur un releve unique. Si le user tranche l'inverse (la spec propose que
--- la moisson gagne, au motif qu'elle vient du client lui-meme), c'est UNE ligne a changer ci-dessous.
-local obsRank, obsStat = {}, { comble = 0, confirme = 0, conflit = 0 }
-local function loadObserved(flavor)
+--   CONFLIT   : les deux parlent et se contredisent        -> depend de la PHASE de la saveur
+-- Un conflit ne se tranche JAMAIS en silence, quel que soit le gagnant : il s'imprime.
+-- Qui gagne depend de `beta` (cf. FLAVORS) : sur une beta le releve en jeu l'emporte, parce que
+-- Wowhead s'y remplit encore par observation ; sur une saveur sortie c'est Wowhead, mature et
+-- recoupe, contre lequel un releve isole ne pese pas. Arbitrage du user, 2026-09-23.
+local obsRank, obsBeta = {}, false
+local obsStat = { comble = 0, confirme = 0, conflit = 0 }
+local function loadObserved(flavor, beta)
+    obsBeta = beta and true or false
     local path = string.format(CURATED_OBS, flavor)
     local f = io.open(path, "rb")
     if not f then return end
@@ -72,6 +74,14 @@ local FLAVORS = {
     Camelot = {
         domain = "forever", base = "Vanilla",
         label  = "WoW: Forever (Camelot)",
+        -- PHASE. Sur une BETA, Wowhead se remplit par OBSERVATION : ses pages sont incompletes et
+        -- parfois perimees, pendant que le client, lui, dit la verite du jour. Un releve fait en
+        -- jeu l'emporte donc sur la page. Sur une saveur SORTIE, le rapport s'inverse : le site
+        -- est mature, corrige et recoupe par des milliers de joueurs, et c'est un releve isole qui
+        -- devient le suspect. Arbitrage du user, 2026-09-23.
+        -- ⚠️ A REPASSER A FALSE quand Forever sort (sortie annoncee le 2026-11-04) : la regle
+        -- change de sens ce jour-la, et rien d'automatique ne s'en apercevra.
+        beta   = true,
         -- `skill` + `slug` servent UNIQUEMENT à imprimer les commandes curl (-fetch) : l'outil ne
         -- va jamais sur le réseau lui-même, pour que la génération reste rejouable hors ligne.
         profs = {
@@ -233,8 +243,14 @@ local function collate(recipes, ids)
                 if o == w then obsStat.confirme = obsStat.confirme + 1
                 else
                     obsStat.conflit = obsStat.conflit + 1
-                    print(string.format("  CONFLIT learnedAt %d : Wowhead=%d, vu en jeu=%d -> on garde Wowhead",
-                          sid, w, o))
+                    if obsBeta then
+                        la[#la] = { sid, o }   -- beta : le client dit la verite du jour
+                        print(string.format("  CONFLIT learnedAt %d : Wowhead=%d, vu en jeu=%d -> on prend le JEU (beta)",
+                              sid, w, o))
+                    else
+                        print(string.format("  CONFLIT learnedAt %d : Wowhead=%d, vu en jeu=%d -> on garde WOWHEAD (sorti)",
+                              sid, w, o))
+                    end
                 end
             end
         elseif o then
@@ -300,7 +316,7 @@ end
 local name = arg and arg[1] or "Camelot"
 local cfg  = FLAVORS[name] or error("saveur inconnue : " .. tostring(name))
 cfg.name = name
-loadObserved(name)
+loadObserved(name, cfg.beta)
 
 -- Drapeaux et sous-ensemble de métiers (pilote), sinon toute la config.
 local flags, only = {}, {}
@@ -484,7 +500,8 @@ print(string.format("\nTerminé (%s) : %d recettes sur %d métiers.", name, tota
 -- question « nos observations, Wowhead les connaissait-il deja ? » -- et une recolte dont on ne
 -- mesure pas l'apport finit par sembler inutile alors qu'elle comble, ou l'inverse.
 if obsStat.comble + obsStat.confirme + obsStat.conflit > 0 then
-    print(string.format("Niveaux vus en jeu : %d comble(nt) un trou de Wowhead, %d confirme(nt) sa valeur, %d en conflit.",
+    print(string.format("Niveaux vus en jeu : %d comble(nt) un trou de Wowhead, %d confirme(nt) sa valeur, %d en conflit (" ..
+          (obsBeta and "beta : le JEU gagne" or "sorti : WOWHEAD gagne") .. ").",
           obsStat.comble, obsStat.confirme, obsStat.conflit))
 end
 if #missing > 0 then

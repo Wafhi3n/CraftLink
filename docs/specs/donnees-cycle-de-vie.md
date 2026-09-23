@@ -110,9 +110,22 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 
 ### Décisions ouvertes, à trancher par le user
 
-1. **Lequel fait foi** quand la génération et la moisson donnent deux niveaux différents pour la même
-   recette ? (Proposition de l'agent : la moisson, parce qu'elle vient du client lui-même — c'est
-   déjà la règle pour la nature, où `recipeSource` fait foi.)
+1. ✅ **TRANCHÉ le 2026-09-23 par le user — et mieux que les deux propositions.** La question n'a pas
+   une réponse, elle en a deux, selon la **phase** de la saveur :
+   - **en bêta, le relevé en jeu l'emporte.** Wowhead s'y remplit encore par observation : ses pages
+     sont incomplètes et parfois périmées, pendant que le client dit la vérité du jour ;
+   - **une fois le jeu sorti, Wowhead l'emporte.** Le site est alors mature, corrigé et recoupé par
+     des milliers de joueurs, et c'est un relevé isolé qui devient le suspect.
+
+   Implémenté par le drapeau `beta` de `FLAVORS` dans `gen_flavor.lua` (Camelot : `true`).
+   ⚠️ **À repasser à `false` à la sortie de Forever, annoncée le 2026-11-04** : la règle change de
+   sens ce jour-là et rien d'automatique ne s'en apercevra. Un conflit s'imprime dans les deux cas,
+   avec le gagnant nommé — il ne se tranche jamais en silence.
+
+   ~~Ancienne question ouverte : **Lequel fait foi** quand la génération et la moisson donnent deux
+   niveaux différents pour la même recette ? (Proposition de l'agent : la moisson, parce qu'elle
+   vient du client lui-même — c'est
+   déjà la règle pour la nature, où `recipeSource` fait foi.)~~
 2. **Runtime contre paquet.** Quand le client sait quelque chose que la base ignore (niveau vu chez
    un formateur), COC s'en sert-il **tout de suite** pour l'affichage du joueur, ou attend-il que le
    fait soit passé par le pipeline et republié ?
