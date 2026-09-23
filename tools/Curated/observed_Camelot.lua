@@ -147,7 +147,7 @@ return {
         [2136] = { 1420, 60.2, 53.3, "Oliver Dwor" },
         [3841] = { 1439, 36.5, 45.4, "Caylais Moonfeather" },
         [4200] = { 1439, 36.8, 44.3, "Laird" },
-        [4213] = { 1457, 58.8, 13.1, "Taladan" },
+        [4213] = { 1457, 58.6, 13.5, "Taladan" },
         [4228] = { 1457, 58.6, 14.1, "Vaean" },
         [4259] = { 1455, 51.2, 42.8, "Thurgrum Deepforge" },
         [4262] = { 1457, 39.8, 34.3, "Darnassus Sentinel" },
@@ -175,7 +175,7 @@ return {
         [10665] = { 1420, 57.4, 48.9, "Junior Apothecary Holland" },
         [10666] = { 1420, 43.9, 54.1, "Gordo" },
         [11065] = { 1455, 60.5, 44.5, "Thonys Pillarstone" },
-        [11070] = { 1457, 60.3, 11.8, "Lalina Summermoon" },
+        [11070] = { 1457, 58.8, 13.3, "Lalina Summermoon" },
         [11865] = { 1455, 61.6, 89.2, "Buliwyf Stonehand" },
         [11870] = { 1458, 57.2, 32.6, "Archibald" },
         [11945] = { 1420, 30.8, 66.9, "Claire Willower" },
@@ -190,5 +190,18 @@ return {
         [271961] = { 1420, 24.6, 60.1, "Webbed Forsaken" },
         [271968] = { 1420, 24.5, 60.3, "Forsaken Adventurer" },
         [272101] = { 1420, 51.4, 53.8, "Deathguard Lizabetha" },
+    },
+    -- [spellID] = rang de metier exige, LU dans la fenetre du formateur.
+    -- Comble les learnedAt que Wowhead ne connait pas ; jamais un zero.
+    rank = {
+        [7420] = 15,
+        [7426] = 40,
+        [7454] = 45,
+        [7457] = 50,
+        [7748] = 60,
+        [7771] = 70,
+        [14293] = 10,
+        [14807] = 70,
+        [1230643] = 20,
     },
 }

@@ -45,7 +45,7 @@ local function setSpot(obs, npcID, map, x, y, name)
     obs.spot[npcID] = { map, round1(x), round1(y), name or (prev and prev[4]) }
 end
 
-function M.empty() return { trainer = {}, vendor = {}, spot = {} } end
+function M.empty() return { trainer = {}, vendor = {}, spot = {}, rank = {} } end
 
 -- COCScoutDB -> obs. Les formateurs viennent de `trainers` (une visite PAR PNJ, depuis 0.2.0).
 function M.mergeScout(obs, db)
@@ -85,6 +85,15 @@ function M.mergeCoc(obs, db, scoutDB)
     end
     local n = 0
     for _, st in pairs(db.trainers or {}) do
+        -- Le RANG exige, releve dans la fenetre du formateur (GetTrainerServiceSkillReq). Il ne
+        -- depend d'aucun PNJ : c'est une propriete de la RECETTE, donc on le prend meme quand
+        -- COCScout a deja attribue le sort plus precisement. Et seulement s'il est > 0 : un zero
+        -- serait lu comme « a portee des le rang 1 », la faute corrigee en v1.35.1.
+        for sid, rank in pairs(st.ranks or {}) do
+            if type(rank) == "number" and rank > 0 and not obs.rank[sid] then
+                obs.rank[sid] = rank; n = n + 1
+            end
+        end
         local npc = st.npc
         if npc and npc.id then
             for sid in pairs(st.teaches or {}) do
@@ -141,6 +150,13 @@ function M.render(obs, header)
         out[#out + 1] = string.format("        [%d] = { %d, %.1f, %.1f, %s },", id, s[1], s[2], s[3], opt(s[4], "%q"))
     end
     out[#out + 1] = "    },"
+    out[#out + 1] = "    -- [spellID] = rang de metier exige, LU dans la fenetre du formateur."
+    out[#out + 1] = "    -- Comble les learnedAt que Wowhead ne connait pas ; jamais un zero."
+    out[#out + 1] = "    rank = {"
+    for _, id in ipairs(sortedKeys(obs.rank or {})) do
+        out[#out + 1] = string.format("        [%d] = %d,", id, obs.rank[id])
+    end
+    out[#out + 1] = "    },"
     out[#out + 1] = "}"
     return table.concat(out, "\n") .. "\n"
 end
@@ -152,6 +168,7 @@ function M.load(path)
     f:close()
     local t = dofile(path)
     t.trainer, t.vendor, t.spot = t.trainer or {}, t.vendor or {}, t.spot or {}
+    t.rank = t.rank or {}   -- section ajoutee le 2026-09-23 : un fichier plus ancien n'en a pas
     return t
 end
 

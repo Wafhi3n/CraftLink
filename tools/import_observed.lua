@@ -31,7 +31,7 @@ end
 local function count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n end
 
 local obs = OBS.load(target)
-local before = { count(obs.trainer), count(obs.vendor), count(obs.spot) }
+local before = { count(obs.trainer), count(obs.vendor), count(obs.spot), count(obs.rank or {}) }
 for i = 2, #arg do
     local dir = arg[i]
     local scout = loadSV(dir .. [[\COCScout.lua]], "COCScoutDB")
@@ -51,5 +51,6 @@ local header = table.concat({
 local f = assert(io.open(target, "wb"))
 f:write(OBS.render(obs, header))
 f:close()
-print(string.format("%s : formateurs %d -> %d sorts, marchands %d -> %d plans, positions %d -> %d",
-    target, before[1], count(obs.trainer), before[2], count(obs.vendor), before[3], count(obs.spot)))
+print(string.format("%s : formateurs %d -> %d sorts, marchands %d -> %d plans, positions %d -> %d, rangs %d -> %d",
+    target, before[1], count(obs.trainer), before[2], count(obs.vendor), before[3], count(obs.spot),
+    before[4] or 0, count(obs.rank or {})))
