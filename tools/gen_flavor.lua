@@ -41,6 +41,28 @@ local WH_DIR    = [[tools\wh\]]
 -- un outil de seconde passe : ce fichier réécrit Data/<Saveur>/*.lua de zéro, un bloc sentinelle
 -- devrait donc être rejoué après chaque application, et un oubli le perdrait en silence.
 local CURATED_DE = [[tools\Curated\disenchant.lua]]
+-- Ce qu'on a VU en jeu, tenu par tools\import_observed.ps1. On y lit `rank` : le niveau de metier
+-- releve dans la fenetre d'un formateur, que Wowhead ne connait pas toujours.
+local CURATED_OBS = [[tools\Curated\observed_%s.lua]]
+
+-- Les observations ne REMPLACENT jamais Wowhead, elles le COMBLENT. Trois cas, et on les compte
+-- tous les trois parce que c'est la seule facon de savoir ce que la recolte apporte vraiment :
+--   comble    : Wowhead se tait, l'observation parle       -> on ecrit l'observation
+--   confirme  : les deux parlent et disent la meme chose   -> on n'ecrit rien de neuf
+--   CONFLIT   : les deux parlent et se contredisent        -> on garde WOWHEAD et on le CRIE
+-- Le conflit ne se tranche pas en silence : une observation isolee peut venir d'une fenetre de
+-- formateur filtree ou d'un mauvais aiguillage de metier, et une donnee livree a des milliers de
+-- clients ne bascule pas sur un releve unique. Si le user tranche l'inverse (la spec propose que
+-- la moisson gagne, au motif qu'elle vient du client lui-meme), c'est UNE ligne a changer ci-dessous.
+local obsRank, obsStat = {}, { comble = 0, confirme = 0, conflit = 0 }
+local function loadObserved(flavor)
+    local path = string.format(CURATED_OBS, flavor)
+    local f = io.open(path, "rb")
+    if not f then return end
+    f:close()
+    local ok, t = pcall(dofile, path)
+    if ok and type(t) == "table" and type(t.rank) == "table" then obsRank = t.rank end
+end
 
 -- Comparaison au niveau des CHAMPS pour -check (objet créé, niveau d'apprentissage) : module pur, testé
 -- à part (tests/test_flavor_drift.lua) — cet outil termine par os.exit et ne se charge pas en harnais.
@@ -204,7 +226,22 @@ local function collate(recipes, ids)
         local e = recipes[sid]
         if e.produces then produces[#produces + 1] = { sid, e.produces }; i2s[#i2s + 1] = { e.produces, sid } end
         if e.reagents then reag[#reag + 1] = { sid, e.reagents } end
-        if e.learnedAt then la[#la + 1] = { sid, e.learnedAt } end
+        local w, o = e.learnedAt, obsRank[sid]
+        if w then
+            la[#la + 1] = { sid, w }
+            if o then
+                if o == w then obsStat.confirme = obsStat.confirme + 1
+                else
+                    obsStat.conflit = obsStat.conflit + 1
+                    print(string.format("  CONFLIT learnedAt %d : Wowhead=%d, vu en jeu=%d -> on garde Wowhead",
+                          sid, w, o))
+                end
+            end
+        elseif o then
+            -- Wowhead se tait : c'est exactement le trou que la recolte existe pour combler.
+            la[#la + 1] = { sid, o }
+            obsStat.comble = obsStat.comble + 1
+        end
     end
     table.sort(i2s, function(a, b) return a[1] < b[1] end)
     return produces, i2s, reag, la
@@ -263,6 +300,7 @@ end
 local name = arg and arg[1] or "Camelot"
 local cfg  = FLAVORS[name] or error("saveur inconnue : " .. tostring(name))
 cfg.name = name
+loadObserved(name)
 
 -- Drapeaux et sous-ensemble de métiers (pilote), sinon toute la config.
 local flags, only = {}, {}
@@ -442,6 +480,13 @@ else
 end
 
 print(string.format("\nTerminé (%s) : %d recettes sur %d métiers.", name, total, #files))
+-- Ce que la recolte en jeu a apporte, dit en clair. Sans ce bilan on ne saurait pas repondre a la
+-- question « nos observations, Wowhead les connaissait-il deja ? » -- et une recolte dont on ne
+-- mesure pas l'apport finit par sembler inutile alors qu'elle comble, ou l'inverse.
+if obsStat.comble + obsStat.confirme + obsStat.conflit > 0 then
+    print(string.format("Niveaux vus en jeu : %d comble(nt) un trou de Wowhead, %d confirme(nt) sa valeur, %d en conflit.",
+          obsStat.comble, obsStat.confirme, obsStat.conflit))
+end
 if #missing > 0 then
     print("Caches HTML manquants (" .. #missing .. ") : " .. table.concat(missing, ", "))
     print("Lance `lua tools\\gen_flavor.lua " .. name .. " -fetch` pour les commandes curl.")
