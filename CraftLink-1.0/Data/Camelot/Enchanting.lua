@@ -1486,6 +1486,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [7857] = { kind = "trainer", { 11073, 1337, "Annora", nil }, { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 3345, 1637, "Godan", "H" }, { 11074, 406, "Hgarth", "H" }, { 11072, 12, "Kitta Firewind", "A" }, { 251978, 36, "Vanessa Sellers", nil } },
         [7859] = { { 4042, 406, "Singed Basilisk", nil }, { 4824, 719, "Aku'mai Fisher", nil }, { 216659, 331, "Fallenroot Satyr", nil } },
         [7861] = { kind = "trainer", { 11073, 1337, "Annora", nil }, { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 3345, 1637, "Godan", "H" }, { 11074, 406, "Hgarth", "H" }, { 11072, 12, "Kitta Firewind", "A" }, { 251978, 36, "Vanessa Sellers", nil } },
+        [7863] = { kind = "trainer", { 5157, 1537, "Gimble Thistlefuzz", "A" } },
         [7867] = { { 3012, 1638, "Nata Dawnstrider", "H" }, { 3537, 267, "Zixil", nil } },
         [13378] = { kind = "trainer", { 11073, 1337, "Annora", nil }, { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 3345, 1637, "Godan", "H" }, { 11074, 406, "Hgarth", "H" }, { 11072, 12, "Kitta Firewind", "A" }, { 251978, 36, "Vanessa Sellers", nil } },
         [13380] = { { 4051, 406, "Cenarion Botanist", "A" }, { 1016, 11, "Highland Lashtail", nil }, { 11858, 406, "Grundig Darkcloud", nil } },
@@ -1806,4 +1807,5 @@ CraftLink:RegisterProfession("Enchanting", {
         [257020] = { 2521, 43.2, 43.2 },
     },
     -- <<< gen_origins.lua
+
 })

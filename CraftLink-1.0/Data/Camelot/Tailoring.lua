@@ -3334,4 +3334,5 @@ CraftLink:RegisterProfession("Tailoring", {
         [266901] = { 2482, 59.6, 49.2 },
     },
     -- <<< gen_origins.lua
+
 })

@@ -3412,4 +3412,5 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [276067] = { 1420, 21.0, 45.8 },
     },
     -- <<< gen_origins.lua
+
 })

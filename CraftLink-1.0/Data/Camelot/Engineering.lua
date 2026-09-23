@@ -1932,4 +1932,5 @@ CraftLink:RegisterProfession("Engineering", {
         [260565] = { 2548, 77.6, 51.0 },
     },
     -- <<< gen_origins.lua
+
 })

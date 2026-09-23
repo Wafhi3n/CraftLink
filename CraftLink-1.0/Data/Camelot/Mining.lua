@@ -159,4 +159,5 @@ CraftLink:RegisterProfession("Mining", {
         [255891] = { 2548, 77.6, 51.8 },
     },
     -- <<< gen_origins.lua
+
 })

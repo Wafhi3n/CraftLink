@@ -1144,4 +1144,5 @@ CraftLink:RegisterProfession("Cooking", {
         [259860] = { 2548, 64.2, 84.0 },
     },
     -- <<< gen_origins.lua
+
 })

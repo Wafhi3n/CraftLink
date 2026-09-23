@@ -1463,4 +1463,5 @@ CraftLink:RegisterProfession("Alchemy", {
         [275322] = { 1416, 18.4, 62.2 },
     },
     -- <<< gen_origins.lua
+
 })
