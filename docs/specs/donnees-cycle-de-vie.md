@@ -1,6 +1,6 @@
 # Tenir la base de données à jour pendant la vie de l'addon
 
-> État : **brouillon** · Rédigée le 2026-09-22 · À arbitrer par le user
+> État : **en cours** — critère 1 (relevé de santé) OUTILLÉ le 2026-09-23 · Rédigée le 2026-09-22
 > Portée : `CraftLink-1.0/Data/` et sa chaîne `tools/` · Consommateurs : COC, TradeScanner
 
 ## Le problème
@@ -13,7 +13,11 @@ de ce qu'on livre est **inconnue**, et elle le restera chez le joueur jusqu'à l
 
 Trois manques constatés, tous de la même famille :
 
-- **357 recettes sans objet produit** (Wowhead se tait encore) ;
+- **des recettes sans objet produit** (Wowhead se tait encore). ⚠️ Ce document a longtemps cité
+  **357**. Le relevé de santé, écrit le 2026-09-23, ne reproduit ce nombre par aucune définition :
+  il mesure **335** hors Enchantement (dont les recettes n'ont pas d'objet produit par nature) et
+  **536** brut. Le 357 n'est donc plus une référence — c'est `scripts/data_health.ps1` qui fait
+  foi, et c'est précisément pour ça qu'il existe ;
 - **29 recettes sans niveau d'apprentissage** — 8 rien qu'en Couture. Signalé en jeu le 2026-09-22 :
   la vue Manquantes les classait en tête et les déclarait à portée, parce que le code lisait
   l'absence comme un `0`. Le symptôme est corrigé côté COC ; **le trou de données, non** ;
@@ -103,8 +107,15 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 
 ## Critères d'acceptation
 
-1. `[outil]` Un relevé de santé nomme, par saveur et par métier, le nombre de recettes sans objet
-   produit, sans niveau, sans source, sans origine. Observateur : n'importe qui, en une commande.
+1. ✅ `[outil]` **FAIT le 2026-09-23** — `scripts/data_health.ps1` (dépôt d'outillage) nomme, par
+   saveur et par métier, le nombre de recettes sans objet produit, sans niveau, sans source, sans
+   origine. En une commande, sans argument pour toutes les saveurs. Il CHARGE les données comme le
+   client (le XML de la saveur, la vraie lib), il ne les parse pas : un fichier ajouté ou retiré est
+   suivi tout seul. Relevé d'ouverture sur Camelot : 2512 recettes, 335 sans objet, **29 sans
+   niveau dont 8 en Couture**, 1720 sans source (68 %), 899 sans origine (36 %).
+   Une **couche saisonnière** (SoD) ne se mesure pas seule — elle étend un set de base et s'auto-
+   désactive hors saison : `data_health.ps1 SoD -Base Vanilla -Season 2`. Chargée seule, l'outil
+   le DIT au lieu d'imprimer un tableau de zéros.
 2. `[outil]` Deux passes de rafraîchissement d'affilée, sans nouveau téléchargement, produisent un
    diff git **vide**. Une régénération ne doit jamais perdre ce qu'une autre passe a écrit.
 3. `[test]` Les tests de forme (`test_camelot_data`, `test_flavor_drift`) restent verts après une
