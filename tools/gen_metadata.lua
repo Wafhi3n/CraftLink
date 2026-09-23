@@ -22,20 +22,39 @@
 --   lua tools\gen_metadata.lua            # Vanilla (cache tools\wh\classic_*.html)
 --   lua tools\gen_metadata.lua TBC        # TBC    (cache tools\wh\tbc_*.html)
 --   lua tools\gen_metadata.lua Wrath      # Wrath  (cache tools\wh\wotlk_*.html)
+--   lua tools\gen_metadata.lua Camelot    # Camelot (cache tools\wh\forever_*.html)
 
 local DATA_ROOT = [[CraftLink-1.0\Data\]]
 local WH_DIR    = [[tools\wh\]]
 
--- Métiers par saveur = exactement les fichiers présents dans Data/<flavor>/.
+-- Le DOMAINE Wowhead se declare (il ne se devine pas) ; les METIERS, eux, se DECOUVRENT dans
+-- Data/<Saveur>/. Ils etaient ecrits a la main ici, et Camelot n'y figurait simplement pas : c'est
+-- la seule raison pour laquelle cette passe n'avait jamais tourne sur la saveur qu'on developpe.
+-- Verifie avant bascule le 2026-09-23 : la decouverte rend EXACTEMENT les listes declarees pour
+-- Vanilla, TBC et Wrath. Meme lecon que la decouverte des .toc et celle des tests.
 local FLAVORS = {
-    Vanilla = { domain = "classic", profs = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting",
-                "Engineering", "FirstAid", "Leatherworking", "Mining", "Poisons", "Tailoring" } },
-    TBC     = { domain = "tbc", profs = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting",
-                "Engineering", "FirstAid", "Jewelcrafting", "Leatherworking", "Mining", "Tailoring" } },
-    Wrath   = { domain = "wotlk", profs = { "Alchemy", "Blacksmithing", "Cooking", "Enchanting",
-                "Engineering", "FirstAid", "Inscription", "Jewelcrafting", "Leatherworking",
-                "Mining", "Tailoring" } },
+    Vanilla = { domain = "classic" },
+    TBC     = { domain = "tbc" },
+    Wrath   = { domain = "wotlk" },
+    Camelot = { domain = "forever" },
 }
+
+-- Antislash fabrique par code : ecrit en dur, il arrive parfois simple ou double selon l'outil
+-- d'edition qui a transite le fichier.
+local BS = string.char(92)
+
+local function professionsOf(flavor)
+    local out = {}
+    local pipe = io.popen('dir /b "' .. DATA_ROOT .. flavor .. BS .. '*.lua"')
+    if not pipe then return out end
+    for line in pipe:lines() do
+        local name = line:gsub("%s+$", ""):match("^(.+)%.lua$")
+        if name then out[#out + 1] = name end
+    end
+    pipe:close()
+    table.sort(out)
+    return out
+end
 
 local MARK_OPEN  = "    -- >>> gen_metadata.lua"
 local MARK_CLOSE = "    -- <<< gen_metadata.lua"
@@ -113,7 +132,28 @@ end
 -- ------------------------------------------------------------------
 -- Écriture du bloc sentinellisé (remplacement ou insertion avant le "})" final)
 -- ------------------------------------------------------------------
-local function renderUnit(meta, recipes, sourceNote)
+-- Le fichier declare-t-il DEJA learnedAt hors de notre bloc ? (On retire le notre avant de
+-- regarder, sinon une relance se repondrait a elle-meme.)
+local function stripUnit(content)
+    local i = content:find(MARK_OPEN, 1, true); if not i then return content end
+    local j = content:find(MARK_CLOSE, i, true); if not j then return content end
+    return content:sub(1, i - 1) .. content:sub(j + #MARK_CLOSE)
+end
+
+-- UNE table, UN proprietaire. Sur les saveurs recentes (Camelot), c'est gen_flavor.lua qui ecrit
+-- DEJA learnedAt ET taughtBy dans le corps du fichier. Les reecrire ici poserait une SECONDE cle
+-- du meme nom dans la meme table Lua, ou seul le dernier gagne selon l'ordre du TEXTE — un
+-- ecrasement que rien n'annonce.
+--
+-- Mesure du 2026-09-23 sur les 9 metiers Camelot, table par table :
+--   learnedAt : identiques (0 perdu, 0 ajoute, 0 valeur differente) — les deux outils lisent la
+--               meme page Wowhead, le doublon n'apportait rien ;
+--   taughtBy  : gen_metadata n'apporte RIEN et PERD 8 entrees (1 Alchimie, 1 Travail du cuir,
+--               6 Couture). Ces 8 sont exactement ce dont l'alerte « plan loote » a besoin.
+-- Conclusion : sur une saveur ou gen_flavor ecrit deja ces tables, cette passe n'a plus d'objet.
+-- On cede la main table par table plutot que de refuser la saveur en bloc : le jour ou un
+-- generateur cesse d'ecrire l'une d'elles, celle-ci redevient la notre sans qu'on y pense.
+local function renderUnit(meta, recipes, sourceNote, skipLearnedAt, skipTaughtBy)
     local la, tb = {}, {}
     for sid in pairs(meta.learnedAt) do
         if recipes[sid] then la[#la + 1] = sid end
@@ -124,7 +164,17 @@ local function renderUnit(meta, recipes, sourceNote)
     end
     table.sort(tb)
 
+    if skipLearnedAt then la = {} end
+    if skipTaughtBy  then tb = {} end
+    -- Rien a dire = rien a ecrire. Un bloc sentinelle vide n'est pas une information, c'est du
+    -- bruit dans un fichier genere : il ferait croire a un traitement la ou il n'y a rien.
+    if #la == 0 and #tb == 0 then return nil, 0, 0 end
+
     local out = { MARK_OPEN .. " (généré — " .. sourceNote .. " ; ne pas éditer à la main)" }
+    if skipLearnedAt or skipTaughtBy then
+        out[#out + 1] = "    -- Tables cedees a gen_flavor.lua (ce fichier les declare deja) : "
+            .. (skipLearnedAt and "learnedAt " or "") .. (skipTaughtBy and "taughtBy" or "")
+    end
     if #la > 0 then
         out[#out + 1] = "    -- niveau de métier où la recette s'apprend : [spellID] = niveau"
         out[#out + 1] = "    learnedAt = {"
@@ -177,7 +227,9 @@ end
 -- Main
 -- ------------------------------------------------------------------
 local flavor = arg and arg[1] or "Vanilla"
-local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor) .. " (Vanilla|TBC|Wrath)")
+local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor) .. " (Vanilla|TBC|Wrath|Camelot)")
+cfg.profs = professionsOf(flavor)
+if #cfg.profs == 0 then error("aucun fichier de metier dans " .. DATA_ROOT .. flavor) end
 
 local totalLA, totalTB = 0, 0
 
@@ -192,12 +244,16 @@ for _, prof in ipairs(cfg.profs) do
         local recipes, nRec = recipesSet(content)
         if not recipes then print("SKIP " .. prof .. " (bloc recipes introuvable)") else
             local meta = parseWowhead(html, recipes)
-            local unit, nLA, nTB = renderUnit(meta, recipes, "Wowhead " .. cfg.domain)
-            writeFile(path, upsertUnit(content, unit))
+            local body   = stripUnit(content)
+            local ownsLA = body:find("learnedAt = {", 1, true) ~= nil
+            local ownsTB = body:find("taughtBy = {", 1, true) ~= nil
+            local unit, nLA, nTB = renderUnit(meta, recipes, "Wowhead " .. cfg.domain, ownsLA, ownsTB)
+            if unit then writeFile(path, upsertUnit(content, unit)) end
             totalLA = totalLA + nLA; totalTB = totalTB + nTB
             local audit = auditItemToSpell(content, meta)
-            print(string.format("%-16s recettes=%-4d learnedAt=%-4d taughtBy=%-4d plans-non-appariés=%d%s",
-                prof, nRec, nLA, nTB, #meta.unmatched,
+            print(string.format("%-16s recettes=%-4d learnedAt=%-8s taughtBy=%-8s plans-non-appariés=%d%s",
+                prof, nRec, ownsLA and "(flavor)" or tostring(nLA),
+                ownsTB and "(flavor)" or tostring(nTB), #meta.unmatched,
                 (#audit > 0) and ("  [AUDIT] itemToSpell pollué par " .. #audit .. " objet(s)-plan") or ""))
             if #meta.unmatched > 0 and #meta.unmatched <= 5 then
                 print("                 non-appariés : " .. table.concat(meta.unmatched, " | "))
