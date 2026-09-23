@@ -47,8 +47,11 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
    joueurs.
 2. **Ce qu'on voit en jeu finit dans la base.** Le formateur, le niveau requis, le PNJ, le prix
    affiché : le client les connaît, le site non. Ce chemin existe pour les origines ; il doit couvrir
-   **les niveaux d'apprentissage**, aujourd'hui absents pour Camelot (`gen_metadata` n'a jamais tourné
-   sur cette saveur).
+   **les niveaux d'apprentissage**. ⚠️ **Corrigé le 2026-09-23** : on croyait ces niveaux absents
+   « parce que `gen_metadata` n'avait jamais tourné sur Camelot ». En réalité `gen_flavor.lua`
+   écrit déjà `learnedAt` pour cette saveur — 2483 sur 2512 — et les **29 qui manquent manquent
+   AUSSI à Wowhead**. La génération a donné tout ce qu'elle a ; le second chemin n'est donc pas un
+   complément, c'est **le seul qui reste**.
 3. **Un trou se voit.** À tout moment on doit pouvoir dire combien de recettes n'ont ni objet produit,
    ni niveau, ni source, et sur quels métiers — sans ouvrir les fichiers à la main.
 4. **Un trou se dit au joueur**, plutôt que d'être comblé par une valeur inventée. Règle déjà
@@ -92,9 +95,18 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
 - 2026-09-22, user — **rien ne vient des autres joueurs.** Wowhead et notre propre addon pour la
   base, Auctionator pour les prix de marché. Cette réponse ferme la question la plus structurante
   des deux specs.
-- 2026-09-22, user — **les niveaux d'apprentissage viennent des DEUX chemins** : la génération
-  (`gen_metadata.lua`, qui n'a jamais tourné sur Camelot) ET la moisson en jeu chez le formateur.
-  Ils se complètent au lieu de se choisir, comme les origines le font déjà avec `observed_<Saveur>`.
+- 2026-09-22, user — **les niveaux d'apprentissage viennent des DEUX chemins** : la génération ET
+  la moisson en jeu chez le formateur. Ils se complètent au lieu de se choisir, comme les origines
+  le font déjà avec `observed_<Saveur>`.
+  ⚠️ **Mesuré le 2026-09-23, la décision reste bonne mais un des deux chemins est déjà épuisé.**
+  `gen_metadata.lua` a été déclaré pour Camelot et exécuté : il n'apporte **rien**. `gen_flavor.lua`
+  écrit déjà `learnedAt` ET `taughtBy` pour cette saveur, depuis la même page Wowhead — les deux
+  `learnedAt` sont rigoureusement identiques, et le `taughtBy` de `gen_metadata` **perdrait 8
+  entrées** (1 Alchimie, 1 Travail du cuir, 6 Couture) par écrasement silencieux de clé dupliquée.
+  L'outil cède désormais ces tables à `gen_flavor` et ne produit aucun diff sur Camelot.
+  **Conséquence : les 29 niveaux ne viendront QUE de la moisson chez le formateur.** La question de
+  savoir lequel fait foi en cas de désaccord perd son objet sur cette saveur — il n'y a plus qu'une
+  source.
 
 ### Décisions ouvertes, à trancher par le user
 
