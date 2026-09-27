@@ -26,7 +26,7 @@ if not lib then return end
 -- passer par le gate de version de LibStub:NewLibrary (qui ne protège que le fichier principal). Sans
 -- ce garde, une copie embarquée plus ANCIENNE chargée APRÈS nous écraserait EncodeKnown/ScanOpenKnown/…
 -- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution du codec RK (+ resync hôtes).
-local RECIPES_REV = 5   -- 5 : `GetAllRecipeIDs` RÉTABLIE (vivante, mesurée) ; 4 : MAINLINE seul
+local RECIPES_REV = 6   -- 6 : rien capté sur le métier d'un AUTRE ; 5 : `GetAllRecipeIDs` rétablie
 if (lib._recipesRev or 0) >= RECIPES_REV then return end
 lib._recipesRev = RECIPES_REV
 
@@ -119,10 +119,35 @@ function lib:OpenProfession()
     return self:ResolveProfession(modern)
 end
 
+-- La fenêtre montre-t-elle MON métier ? Le lien de métier d'un autre joueur, le métier de la
+-- guilde ou d'un de ses membres, et un PNJ artisan ouvrent la MÊME fenêtre, et l'énumérateur y
+-- rend les recettes de L'AUTRE, `learned` compris. Mesuré en jeu le 2026-09-27 (COC,
+-- docs/test-lien-metier.md) : un clic sur le lien d'Enchantement d'un autre joueur a versé ses
+-- 21 recettes dans le registre d'un perso qui n'avait AUCUN métier, et l'union ne retire jamais.
+-- `IsTradeSkillLinked` et `IsTradeSkillGuildMember` ont répondu en jeu ce jour-là ; les quatre sont
+-- appelées par le FrameXML de Blizzard. Une fonction absente ou qui lève ne donne pas d'avis : la
+-- tenir pour « étranger » couperait en silence toute capture le jour où une seule disparaîtrait.
+local FOREIGN_VIEWS = { "IsTradeSkillLinked", "IsTradeSkillGuild", "IsTradeSkillGuildMember", "IsNPCCrafting" }
+
+function lib:IsOwnProfessionOpen()
+    local c = C_TradeSkillUI
+    if not c then return true end
+    for _, name in ipairs(FOREIGN_VIEWS) do
+        local fn = c[name]
+        if fn then
+            local ok, foreign = pcall(fn)
+            if ok and foreign then return false end
+        end
+    end
+    return true
+end
+
 -- Lit la fenêtre ouverte → (profCanonical, set{spellID=true}). set vide si rien capté.
+-- Le métier d'un AUTRE est nommé mais jamais capté : ses recettes ne sont pas les miennes.
 function lib:ReadOpenKnown()
     local prof = self:OpenProfession()
     if not prof or self:Count(prof) == 0 then return prof, {} end
+    if not self:IsOwnProfessionOpen() then return prof, {} end
     return prof, modernKnownSet()
 end
 
