@@ -137,7 +137,43 @@ jour dans la durée, et par quel chemin ce qu'on apprend en jeu revient dedans**
    origine. En une commande, sans argument pour toutes les saveurs. Il CHARGE les données comme le
    client (le XML de la saveur, la vraie lib), il ne les parse pas : un fichier ajouté ou retiré est
    suivi tout seul. Relevé d'ouverture sur Camelot : 2512 recettes, 335 sans objet, **29 sans
-   niveau dont 8 en Couture**, 1720 sans source (68 %), 899 sans origine (36 %).
+   niveau dont 8 en Couture**, 1720 sans source (68 %), 898 sans origine (36 %).
+
+   > **Relevé du 2026-09-27 — la base n'a pas bougé, et le 899 d'ouverture était un 898.**
+   > Aucun commit ne touche `CraftLink-1.0/Data/` depuis le 2026-09-23, et la mesure rend
+   > exactement les mêmes chiffres : 2512 / 335 / 29 / 1720 / **898**. Le `899` ci-dessus était une
+   > erreur de transcription, corrigée. Ce n'est pas un détail : c'est CE nombre que la prochaine
+   > passe aura pour point de comparaison, et un point de départ faux d'une unité ferait passer une
+   > passe stérile pour une passe qui a comblé une recette — exactement le mensonge que ce relevé
+   > existe pour empêcher.
+   > L'outil a aussi été vérifié **déterministe** : trois exécutions d'affilée sur des données
+   > inchangées rendent le même tableau. Un relevé qui varierait tout seul ne vaudrait rien.
+
+   **Ce que le relevé dit de la CIBLE, et qui oriente la prochaine passe.** Camelot a un profil
+   *inversé* par rapport à toutes les autres saveurs :
+
+   | saveur | sans source | sans origine |
+   |---|---|---|
+   | **Camelot** | **68 %** (le pire) | **36 %** (le meilleur) |
+   | TBC | 39 % | 72 % |
+   | Vanilla | 43 % | 77 % |
+   | Wrath | 52 % | 80 % |
+
+   Partout ailleurs l'origine (page d'OBJET) manque plus que la source (page de MÉTIER). Sur
+   Camelot c'est le contraire. Autrement dit la passe `gen_origins` y est largement en avance et
+   c'est **`gen_sources` qui est en retard** — c'est là qu'il faut viser, pas au hasard.
+
+   **Et le trou des 335 sans objet produit est propre à Camelot** : 13 %, contre 0 à 2 % ailleurs.
+   Il compte double depuis la v1.36.0, parce que la page Profit a besoin d'un objet produit pour
+   avoir un prix de vente : sans lui, pas de marge, donc pas de ligne. Répartition : Travail du cuir
+   122/604, Forge 93/512, Couture 72/477, Ingénierie 29/278, Alchimie 15/197.
+   ⚠️ **Nuance mesurable en jeu seulement** : depuis la v1.36.0 le calcul lit le schéma de recette
+   sur le CLIENT avant de se rabattre sur le catalogue, donc une partie de ces 335 se referme au
+   RUNTIME sans que ce relevé le voie. Combien, on ne le saura qu'en comptant les lignes de la page
+   Profit face aux recettes du métier — le relevé mesure la BASE, pas ce que le joueur obtient.
+
+   Autres points saillants, hors cible : Mining sur Camelot est à 18/18 sans source (100 %, petit
+   mais total), et l'Écriture sur Wrath à 440/444 (99 %) — une profession entière sans nature.
    Une **couche saisonnière** (SoD) ne se mesure pas seule — elle étend un set de base et s'auto-
    désactive hors saison : `data_health.ps1 SoD -Base Vanilla -Season 2`. Chargée seule, l'outil
    le DIT au lieu d'imprimer un tableau de zéros.
