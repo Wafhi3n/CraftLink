@@ -32,7 +32,8 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 13   -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
+local TRANSPORT_REV = 14   -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
+                           -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
                            -- 12 : file canal-texte extraite (CraftLink_TextQueue) + QueueBeacon (balise d'ARRIVÉE enfilée au login)
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
@@ -458,13 +459,24 @@ local function installBeaconFilter()
         end)
 end
 
+-- Nom RÉSEAU du joueur, celui que le serveur met en émetteur de NOS messages (écho du canal compris).
+-- Forever : « Prénom Nom » ; UnitName n'en rend que le prénom, GetUnitName les recolle (Camelot/
+-- NameUtil.lua ; relevé 2026-09-27). Comparer au prénom laissait notre écho entrer dans l'annuaire.
+local function myNetworkName()
+    if GetUnitName then
+        local ok, n = pcall(GetUnitName, "player", true)
+        if ok and type(n) == "string" and n ~= "" then return n end
+    end
+    return UnitName and UnitName("player") or "?"
+end
+
 function lib:StartTransport()
     if self._transportStarted then return end
     if not (C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix) then return end
     self._transportStarted = true
     C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
 
-    local me = UnitName and UnitName("player") or "?"
+    local me = myNetworkName()
     local f = CreateFrame("Frame", "CraftLinkTransportFrame")
     f:RegisterEvent("CHAT_MSG_ADDON")
     f:RegisterEvent("CHAT_MSG_CHANNEL")        -- balises TEXTE de découverte (voir SendBeacon)
