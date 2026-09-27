@@ -13,7 +13,7 @@ if not lib then return end
 
 -- Anti-clobber (même logique que CraftLink_Recipes) : compagnon re-patché hors du gate
 -- LibStub. BUMP à chaque évolution du codec CD (+ resync hôtes).
-local COOLDOWNS_REV = 5   -- 5 : `GetAllRecipeIDs` RÉTABLIE (vivante, mesurée) ; 4 : MAINLINE seul
+local COOLDOWNS_REV = 6   -- 6 : rien lu sur le métier d'un AUTRE ; 5 : `GetAllRecipeIDs` rétablie
 if (lib._cooldownsRev or 0) >= COOLDOWNS_REV then return end
 lib._cooldownsRev = COOLDOWNS_REV
 
@@ -78,6 +78,9 @@ function lib:ReadOpenCooldowns()
     if not self.OpenProfession then return nil, nil end   -- compagnon Recipes absent (lib partielle)
     local prof = self:OpenProfession()
     if not prof then return nil, nil end
+    -- Le métier d'un AUTRE (lien, guilde, PNJ) : ses recettes à CD ne sont pas les miennes, et un
+    -- restant nil y vaudrait « prête » — on annoncerait des transmutations qu'on n'a pas.
+    if self.IsOwnProfessionOpen and not self:IsOwnProfessionOpen() then return prof, nil end
     local cds = self:CooldownRecipes(prof)
     if not cds then return prof, nil end
     local c   = C_TradeSkillUI
