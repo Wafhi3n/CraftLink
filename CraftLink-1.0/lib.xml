@@ -10,4 +10,5 @@
     <Script file="CraftLink_Cooldowns.lua"/>
     <Script file="CraftLink_TextQueue.lua"/>
     <Script file="CraftLink_Transport.lua"/>
+    <Script file="CraftLink_Fanout.lua"/>
 </Ui>

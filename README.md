@@ -20,7 +20,9 @@ Source canonique unique ; **pas un addon installé séparément**.
   compact, diffusable en un addon message.
 - **Versions** : `dataVersion` (compat des index de bits) + `protocolVersion` (compat du wire).
 - **Transports** (`CraftLink_Transport.lua`) : découverte par balise texte (hardware event) +
-  données en WHISPER dirigé.
+  données en WHISPER dirigé. **Sans canal** (`CraftLink_Fanout.lua`, le cas de Forever où le canal
+  est morcelé) : la portée « global » part en whisper vers les pairs que l'hôte désigne
+  (`SetPeerSource`), avec plafond, anti-doublon et lecture du code de `SendAddonMessage`.
 
 > Ce qui touche les **gens** (présence, profils, favoris, réputation) **n'est pas** ici — ça vit
 > dans le produit *Crafting Order - Classic*. CraftLink ne connaît ni l'UI ni le skin de l'hôte.
