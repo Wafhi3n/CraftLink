@@ -1,0 +1,177 @@
+-- CraftLink-1.0 — Fanout : la portée « global » quand il n'y a PAS de canal.
+--
+-- Pourquoi : sur WoW: Forever, un canal custom est MORCELÉ en salles par une clé inconnue (prouvé le
+-- 2026-09-27 : deux joueurs côte à côte, même camp, même couche, ne s'entendaient pas dans CraftLinkNet ;
+-- leurs whispers, eux, passaient). Le produit coupe donc le canal (SetAutoJoin(false)) et désigne ses
+-- pairs (SetPeerSource) : « à tous » devient un whisper par pair en ligne. Aucun appelant ne change —
+-- une douzaine d'appels émettent « global », les rerouter un par un en aurait oublié un.
+--
+-- Ce que ce fichier possède :
+--   * le fanout (plafond MAX_PEERS, jamais vers soi) ;
+--   * l'anti-doublon des whispers : Orders:Broadcast vise déjà les artisans concernés, puis « tous »,
+--     puis le texte — trois chemins vers le même joueur ;
+--   * la lecture du code rendu par SendAddonMessage : débit dépassé → le message repasse en tête ;
+--     cible hors ligne → le produit est prévenu (c'est la présence que donnait le canal) ;
+--   * la mise en route sans canal (réseau « prêt », départ d'une salle restée d'avant).
+-- Spec : CraftingOrderClassic/docs/specs/communaute-sans-canal.md
+
+local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
+if not lib then return end
+
+-- Anti-clobber, même règle que Transport : BUMP à chaque évolution, et resync de TOUS les hôtes.
+local FANOUT_REV = 1
+if (lib._fanoutRev or 0) >= FANOUT_REV then return end
+lib._fanoutRev = FANOUT_REV
+
+local CHANNEL_NAME  = "CraftLinkNet"   -- même défaut que Transport (SetGlobalChannel le remplace)
+local MAX_PEERS     = 40   -- whispers par message « à tous » ; au-delà, ce transport ne suffit plus
+local DEDUP_WINDOW  = 2    -- s : même message vers la même cible → une seule fois
+local READY_DELAY   = 3    -- s : laisse le produit brancher ses rappels avant de déclarer le réseau prêt
+local THROTTLE_WAIT = 1    -- s : pause de la file quand le serveur signale un débit dépassé
+local MAX_TRIES     = 5    -- essais d'un message refusé pour débit, avant abandon tracé
+
+-- Codes de SendAddonMessage (Enum.SendAddonMessageResult, ChatConstantsDocumentation de Forever). Sur
+-- Classic Era l'appel rend autre chose (booléen ou rien) : aucune égalité ne tient, rien ne se déclenche.
+local RES = (Enum and Enum.SendAddonMessageResult) or {}
+local RES_THROTTLE = RES.AddonMessageThrottle or 3
+local RES_LOCKDOWN = RES.AddOnMessageLockdown or 11   -- verrouillage d'instance : refusé, sans reprise utile
+local RES_OFFLINE  = RES.TargetOffline or 12
+
+lib._recentSends = lib._recentSends or {}   -- [cible \0 message] = instant d'enfilage
+lib._lastWhisper = lib._lastWhisper or {}   -- [cible] = instant du dernier whisper parti
+
+local function now() return (GetTime and GetTime()) or 0 end
+local function trace(cat, msg) if lib._trace then pcall(lib._trace, cat, msg) end end
+
+-- fn() rend { [nom] = true } : les pairs que le produit sait EN LIGNE avec l'addon.
+function lib:SetPeerSource(fn) self._peerSource = fn end
+-- fn(nom) : un envoi vers ce joueur a répondu « cible hors ligne ».
+function lib:OnPeerOffline(fn) self._peerOfflineCb = fn end
+
+-- "channel" | "whisper" | nil (pas encore prêt) — pour le statut du produit.
+function lib:NetworkMode()
+    if self._channelJoined then return "channel" end
+    if self._offlineReady then return "whisper" end
+    return nil
+end
+
+-- L'addon a-t-il écrit à ce joueur il y a moins de `window` s ? Le produit reconnaît ainsi SON whisper
+-- derrière un « Aucun joueur nommé X » du serveur, pour l'avaler et éteindre X.
+function lib:WhisperedRecently(name, window)
+    local t = name and self._lastWhisper[name]
+    return t ~= nil and (now() - t) < (window or 15)
+end
+
+-- ------------------------------------------------------------------
+-- Anti-doublon des whispers
+-- ------------------------------------------------------------------
+-- Par INSTANT D'ENFILAGE, pas par présence dans la file : le premier exemplaire est souvent déjà parti
+-- (file vide → envoi immédiat) quand le deuxième arrive. Tout récepteur déduplique déjà (id d'ordre,
+-- throttle d'annonce) : le même message pour la même cible en moins de 2 s n'apporte jamais rien.
+local function purgeRecent(t)
+    local n = 0
+    for k, at in pairs(lib._recentSends) do
+        if t - at >= DEDUP_WINDOW then lib._recentSends[k] = nil else n = n + 1 end
+    end
+    lib._recentCount = n
+end
+
+function lib:_IsDuplicate(payload, target)
+    if not target then return false end
+    local t, key = now(), target .. "\0" .. payload
+    local at = self._recentSends[key]
+    if at and t - at < DEDUP_WINDOW then return true end
+    self._recentSends[key] = t
+    self._recentCount = (self._recentCount or 0) + 1
+    if self._recentCount > 200 then purgeRecent(t) end
+    return false
+end
+
+-- ------------------------------------------------------------------
+-- Fanout : « à tous » sans canal
+-- ------------------------------------------------------------------
+-- Rend le nombre de whispers demandés. Personne en ligne (au login) → 0, et c'est normal : le contact
+-- s'établit par la découverte dirigée du produit (amis, guilde, cercle), qui ajoute ses pairs au fil
+-- des réponses. Au-delà du plafond, ce sont toujours les mêmes que `pairs` laisse de côté : c'est
+-- tracé, et c'est le signal que la communauté a dépassé ce que ce transport sait porter.
+function lib:_FanoutGlobal(payload)
+    if not (payload and payload ~= "" and self._peerSource) then return 0 end
+    local ok, peers = pcall(self._peerSource)
+    if not ok or type(peers) ~= "table" then return 0 end
+    local sent, left = 0, 0
+    for name in pairs(peers) do
+        if name ~= self._me then
+            if sent < MAX_PEERS then
+                sent = sent + 1
+                self:Send(payload, "whisper", name)
+            else
+                left = left + 1
+            end
+        end
+    end
+    if left > 0 then
+        trace("send", ("fanout plafonné à %d : %d pair(s) laissé(s) de côté"):format(MAX_PEERS, left))
+    end
+    return sent
+end
+
+-- ------------------------------------------------------------------
+-- Code rendu par SendAddonMessage
+-- ------------------------------------------------------------------
+-- Appelé par _Pump après chaque envoi ; rend l'attente avant le suivant (nil = cadence normale).
+-- Le débit est la raison d'être de ce retour : un fanout multiplie les whispers, et un message refusé
+-- pour débit était PERDU sans que personne le sache.
+function lib:_OnSendResult(item, res)
+    if item.scope == "whisper" and item.target then self._lastWhisper[item.target] = now() end
+    if res == RES_THROTTLE then
+        item.tries = (item.tries or 0) + 1
+        if item.tries < MAX_TRIES then
+            table.insert(self._sendQueue, 1, item)
+            trace("send", "débit serveur dépassé → nouvel essai dans " .. THROTTLE_WAIT .. " s")
+        else
+            trace("send", "débit serveur : abandon après " .. MAX_TRIES .. " essais : " .. item.payload:sub(1, 40))
+        end
+        return THROTTLE_WAIT
+    end
+    if res == RES_OFFLINE and item.target then
+        trace("send", "cible hors ligne : " .. item.target)
+        if self._peerOfflineCb then pcall(self._peerOfflineCb, item.target) end
+    elseif res == RES_LOCKDOWN then
+        -- Pas de reprise : le verrou dure toute la rencontre, et un message rejoué tard ment (commande
+        -- annulée depuis). La trace est la seule preuve qu'un envoi est tombé en instance.
+        trace("send", "verrouillage d'instance : message perdu : " .. item.payload:sub(1, 40))
+    end
+    return nil
+end
+
+-- ------------------------------------------------------------------
+-- Mise en route sans canal
+-- ------------------------------------------------------------------
+-- Quitte CraftLinkNet s'il est encore là : un /reload ne fait quitter aucun canal, et le joueur qui
+-- vient de mettre l'addon à jour y serait resté (souvent sur le n° 1). Appelé au démarrage et par le
+-- chien de garde (8 s), donc aussi quand le canal n'apparaît qu'après le login.
+function lib:_LeaveStaleChannel()
+    local name = self._channelName or CHANNEL_NAME
+    local idx = GetChannelName and GetChannelName(name) or 0
+    if type(idx) == "number" and idx > 0 and LeaveChannelByName then
+        pcall(LeaveChannelByName, name)
+        trace("net", "canal " .. name .. " encore présent → quitté (réseau sans canal)")
+    end
+end
+
+-- Déclare le réseau prêt SANS canal : IsNetworkReady() devient vrai et les rappels OnNetworkReady
+-- (démarrage du produit : annonce, renvoi des commandes, LFW) partent une fois. Différé : au démarrage
+-- du transport, le produit n'a pas encore branché tous ses rappels.
+function lib:_StartOffline()
+    if self._offlineReady or self._offlinePending then return end
+    self._offlinePending = true
+    local function go()
+        lib._offlinePending = nil
+        if lib._autoJoin ~= false or lib._offlineReady then return end   -- canal repris entre-temps
+        lib._offlineReady = true
+        lib:_LeaveStaleChannel()
+        trace("net", "réseau SANS canal : « global » part en whisper vers les pairs en ligne")
+        lib:_FireReady()
+    end
+    if C_Timer and C_Timer.After then C_Timer.After(READY_DELAY, go) else go() end
+end

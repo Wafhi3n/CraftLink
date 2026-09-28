@@ -3,15 +3,10 @@
 -- Infrastructure réseau réutilisable (pas spécifique aux recettes) : un addon enregistre des
 -- handlers par verbe (`RegisterHandler("RK", fn)`) et émet via `Send(payload, scope[, target])`.
 -- Portées :
---   * "global"  : canal CUSTOM dédié (auto-créé via JoinTemporaryChannel, nom "CraftLinkNet").
---                 ⚠️ Testé PTR 2026-06-30 : les canaux SYSTÈME intégrés (General/Trade/Services/
---                 LocalDefense/WorldDefense/LFG/GuildRecruitment) NE RELAIENT PAS le CHAT_MSG_ADDON
---                 côté serveur (le texte normal passe, l'AddonMessage est silencieusement avalée) —
---                 confirmé avec Services : `[send] global` côté A, AUCUN `[recv]` côté B, alors que
---                 le whisper simultané est bien arrivé. Seul un canal CUSTOM (créé par l'addon, pas
---                 un des canaux par défaut du client) relaie réellement le CHAT_MSG_ADDON. D'où le
---                 retour à un canal dédié pour le TRANSPORT — transparence assurée autrement (canal
---                 visible dans la liste, popup d'info one-shot, opt-out).
+--   * "global"  : À TOUS. Canal CUSTOM "CraftLinkNet" s'il est joint (les canaux SYSTÈME n'ont jamais
+--                 relayé l'AddonMessage, testé PTR 2026-06-30). SANS canal (SetAutoJoin(false), le cas
+--                 de COC depuis que Forever MORCELLE le canal, 2026-09-27) : un whisper par pair en
+--                 ligne que le produit désigne — cf. CraftLink_Fanout.lua.
 --   * "guild"   : distribution "GUILD" (+ relais GreenWall à brancher — hardware-event only).
 --   * "say"/"yell": proximité (SendAddonMessage "SAY"/"YELL"), limité par la portée.
 --   * "whisper" : 1:1 DIRIGÉ vers `target` (SendAddonMessage "WHISPER"). FIABLE sans guilde ni canal
@@ -32,9 +27,9 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 14   -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
+local TRANSPORT_REV = 15   -- 15 : réseau SANS canal — « global » en whisper vers les pairs (CraftLink_Fanout)
+                           -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
                            -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
-                           -- 12 : file canal-texte extraite (CraftLink_TextQueue) + QueueBeacon (balise d'ARRIVÉE enfilée au login)
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
 lib._transportRev = TRANSPORT_REV
 
@@ -90,7 +85,7 @@ function lib:RegisterHandler(verb, fn)
 end
 function lib:OnPresence(fn)            self._presenceCb = fn end
 function lib:OnBeacon(fn)              self._beaconCb = fn end   -- balise TEXTE de découverte reçue
-function lib:IsNetworkReady()          return self._channelJoined == true end
+function lib:IsNetworkReady()          return self._channelJoined == true or self._offlineReady == true end
 
 -- Configuration produit (optionnelle, à appeler AVANT StartTransport) :
 --   SetGlobalChannel(name) : remplace le nom du canal custom (défaut "CraftLinkNet").
@@ -123,7 +118,9 @@ end
 function lib:SetAutoJoin(enabled)
     local on = (enabled ~= false)
     self._autoJoin = on
-    if not on then self:LeaveNetwork() end
+    if on then self._offlineReady = nil; return end
+    self:LeaveNetwork()
+    if self._transportStarted and self._StartOffline then self:_StartOffline() end   -- bascule en cours de session
 end
 function lib:GlobalChannelKind()    return self._channelJoined and "custom" or nil end
 
@@ -136,7 +133,7 @@ function lib:ChannelName()        return self:GlobalChannelLabel() end
 function lib:OnNetworkReady(fn)
     if type(fn) ~= "function" then return end
     self._readyCbs[#self._readyCbs + 1] = fn
-    if self._channelJoined then pcall(fn) end
+    if self:IsNetworkReady() then pcall(fn) end
 end
 
 -- Retire NOTRE canal de l'affichage de TOUTES les fenêtres de chat (trafic technique invisible au
@@ -150,8 +147,8 @@ local function hideChannelFromFrames()
     end
 end
 
-local function fireReady()
-    trace("net", "canal acquis (idx=" .. tostring(lib._channelIndex) .. ") → ready callbacks")
+function lib:_FireReady()   -- méthode, pas locale : CraftLink_Fanout la déclenche aussi (réseau sans canal)
+    trace("net", "réseau prêt (canal idx=" .. tostring(lib._channelIndex) .. ") → ready callbacks")
     hideChannelFromFrames()
     for _, fn in ipairs(lib._readyCbs) do pcall(fn) end
 end
@@ -208,7 +205,7 @@ function lib:JoinNetwork(attempt)
     if idx and idx > 0 then
         self._channelIndex  = idx
         self._channelJoined = true
-        fireReady()
+        lib:_FireReady()
     elseif attempt < 15 and C_Timer and C_Timer.After then
         trace("net", "join tentative " .. attempt .. " — index pas encore résolu")
         C_Timer.After(JOIN_RETRY, function() lib:JoinNetwork(attempt + 1) end)
@@ -220,7 +217,10 @@ end
 -- Watchdog : ré-résout l'index et rejoint si le canal a été perdu (reload, kick, etc.).
 function lib:_Watchdog()
     self:_TrimTextQueue()                    -- purge des lignes canal périmées (hors du chemin d'input)
-    if self._autoJoin == false then return end
+    if self._autoJoin == false then
+        if self._LeaveStaleChannel then self:_LeaveStaleChannel() end   -- une salle restée d'avant (/reload)
+        return
+    end
     local name = self._channelName or CHANNEL_NAME
     local idx  = GetChannelName and GetChannelName(name) or 0
     if idx and idx > 0 then
@@ -230,7 +230,7 @@ function lib:_Watchdog()
             self._channelJoined = true
             if not was then
                 trace("net", "watchdog : canal ré-acquis (idx=" .. idx .. ")")
-                fireReady()
+                lib:_FireReady()
             end
         end
     else
@@ -244,20 +244,21 @@ end
 -- ------------------------------------------------------------------
 -- Envoi (file FIFO throttlée, partagée par toutes les portées)
 -- ------------------------------------------------------------------
+-- Rend le code de SendAddonMessage (un Enum.SendAddonMessageResult sur Forever : débit, cible hors
+-- ligne…), lu par _OnSendResult (CraftLink_Fanout). nil quand rien n'est parti.
 local function rawSend(payload, scope, target)
     if not (C_ChatInfo and C_ChatInfo.SendAddonMessage) then return end
     if scope == "guild" then
-        C_ChatInfo.SendAddonMessage(PREFIX, payload, "GUILD")
+        return C_ChatInfo.SendAddonMessage(PREFIX, payload, "GUILD")
     elseif scope == "whisper" then
-        if target and target ~= "" then C_ChatInfo.SendAddonMessage(PREFIX, payload, "WHISPER", target) end
+        if target and target ~= "" then return C_ChatInfo.SendAddonMessage(PREFIX, payload, "WHISPER", target) end
     elseif scope == "say" or scope == "yell" then
-        C_ChatInfo.SendAddonMessage(PREFIX, payload, scope == "yell" and "YELL" or "SAY")
+        return C_ChatInfo.SendAddonMessage(PREFIX, payload, scope == "yell" and "YELL" or "SAY")
     else -- "global"
         if lib._channelIndex then
-            C_ChatInfo.SendAddonMessage(PREFIX, payload, "CHANNEL", lib._channelIndex)
-        else
-            trace("send", "DROP global (canal pas prêt) : " .. payload:sub(1, 40))
+            return C_ChatInfo.SendAddonMessage(PREFIX, payload, "CHANNEL", lib._channelIndex)
         end
+        trace("send", "DROP global (canal pas prêt) : " .. payload:sub(1, 40))
     end
 end
 
@@ -266,10 +267,11 @@ function lib:_Pump()
     local item = table.remove(self._sendQueue, 1)
     if not item then return end
     trace("send", (item.scope or "global") .. (item.target and ("→" .. item.target) or "") .. " : " .. item.payload:sub(1, 60))
-    rawSend(item.payload, item.scope, item.target)
+    local res = rawSend(item.payload, item.scope, item.target)
+    local wait = (self._OnSendResult and self:_OnSendResult(item, res)) or SEND_INTERVAL
     self._sendBusy = true
     if C_Timer and C_Timer.After then
-        C_Timer.After(SEND_INTERVAL, function() lib._sendBusy = false; lib:_Pump() end)
+        C_Timer.After(wait, function() lib._sendBusy = false; lib:_Pump() end)
     else
         self._sendBusy = false
     end
@@ -278,21 +280,20 @@ end
 -- scope : "global" (défaut) | "guild" | "say" | "yell" | "whisper" (requiert target).
 function lib:Send(payload, scope, target)
     if not payload or payload == "" then return end
-    self._sendQueue[#self._sendQueue + 1] = { payload = payload, scope = scope or "global", target = target }
+    scope = scope or "global"
+    if scope == "global" and self._autoJoin == false and self._FanoutGlobal then return self:_FanoutGlobal(payload) end
+    if scope == "whisper" and self._IsDuplicate and self:_IsDuplicate(payload, target) then return end
+    self._sendQueue[#self._sendQueue + 1] = { payload = payload, scope = scope, target = target }
     self:_Pump()
 end
 
 -- Envoi d'une ligne TEXTE sur le canal (balise CLNK1 découverte OU données CLD1) : garde canal +
 -- throttle par champ (`lastKey`) + pcall + trace. SendChatMessage est PROTÉGÉ hardware-event-only en
 -- Classic Era → à n'appeler QUE sous input (clic/slash).
--- ⚠️ Le `pcall` N'ABSORBE PAS un ADDON_ACTION_BLOCKED : le blocage d'une fonction protégée n'est PAS
--- une erreur Lua, c'est un ÉVÉNEMENT (ADDON_ACTION_BLOCKED) émis par la couche de protection du client
--- APRÈS le retour normal de l'appel. `pcall` réussit donc (`ok == true`) et BugGrabber capture quand
--- même le blocage → un appel hors input produit une popup d'erreur ET est faussement compté « parti ».
--- CONSÉQUENCE : ne JAMAIS atteindre cette fonction hors hardware event. Les émetteurs hors input
--- (login/OnNetworkReady, ticker) doivent passer par QueueText (file → drain au prochain input), pas par
--- un envoi immédiat. Retourne true SEULEMENT si l'appel a été tenté (ni canal absent, ni throttlé) — ce
--- qui, sous input, vaut « parti ».
+-- ⚠️ Le `pcall` N'ABSORBE PAS un ADDON_ACTION_BLOCKED : c'est un ÉVÉNEMENT émis APRÈS le retour normal
+-- de l'appel, pas une erreur Lua → hors input : popup d'erreur ET envoi faussement compté « parti ».
+-- Les émetteurs hors input (login, ticker) passent donc par QueueText. Retourne true SEULEMENT si l'appel
+-- a été tenté (ni canal absent, ni throttlé) — ce qui, sous input, vaut « parti ».
 local function sendChannelLine(line, minInterval, lastKey)
     if not (SendChatMessage and lib._channelIndex) then return false end
     local t = (GetTime and GetTime()) or 0
@@ -320,15 +321,11 @@ end
 -- (`OnNetworkReady`), où il n'y a par construction aucun hardware event : elle partira au premier clic
 -- ou à la première touche du joueur, donc quelques secondes après son login, sans qu'il ait rien à faire.
 -- C'EST le correctif du défaut « un nouvel installé reste invisible » (cf. l'en-tête de TextQueue).
--- Trois choix, chacun pour une raison précise :
---   * `kind` → UNE SEULE balise en file : le watchdog re-déclenche OnNetworkReady à chaque
---     ré-acquisition du canal, et rien ne justifie d'en empiler.
---   * `ttl = false` → elle n'expire pas. Une donnée périmée ment (un ordre a pu être annulé depuis) ;
---     « je suis là » reste VRAI tant que le joueur est connecté. Rien ne la rejouera, donc on la garde.
---   * `sticky` → enfilée au login, elle est la PLUS ANCIENNE : sans exception, le plafond de file la
---     sacrifierait la première, au profit de lignes de données.
+-- `kind` : UNE seule balise en file (le watchdog re-déclenche OnNetworkReady) ; `ttl = false` : « je suis
+-- là » reste vrai tant que le joueur est connecté ; `sticky` : la plus ancienne, le plafond la sacrifierait.
+-- Sans canal, pas de balise : aucun inconnu ne l'entendrait (le cercle remplace la découverte).
 function lib:QueueBeacon(extra)
-    if self._autoJoin == false then return false end   -- opt-out : ne rien mettre en file
+    if self._autoJoin == false then return false end
     return self:_EnqueueText(BEACON_TAG .. (extra and (" " .. extra) or ""),
         { minInterval = BEACON_MIN_INTERVAL, lastKey = "_lastBeacon",
           kind = "beacon", ttl = false, sticky = true })
@@ -344,7 +341,7 @@ local DATA_OPTS = { minInterval = DATA_MIN_INTERVAL, lastKey = "_lastData" }
 
 function lib:BroadcastText(payload)
     if not (payload and payload ~= "") then return false end
-    if self._autoJoin == false then return false end   -- opt-out : ne rien émettre NI mettre en file
+    if self._autoJoin == false then return (self._FanoutGlobal and self:_FanoutGlobal(payload) or 0) > 0 end
     local line = DATA_TAG .. payload:gsub("|", "~")
     if sendChannelLine(line, DATA_MIN_INTERVAL, "_lastData") then return true end
     self:_EnqueueText(line, DATA_OPTS)
@@ -357,7 +354,7 @@ end
 -- clic/touche via _DrainText — seul créneau où l'envoi canal-texte est réellement autorisé.
 function lib:QueueText(payload)
     if not (payload and payload ~= "") then return false end
-    if self._autoJoin == false then return false end   -- opt-out : ne rien mettre en file
+    if self._autoJoin == false then return (self._FanoutGlobal and self:_FanoutGlobal(payload) or 0) > 0 end
     return self:_EnqueueText(DATA_TAG .. payload:gsub("|", "~"), DATA_OPTS) and true or false
 end
 
@@ -477,6 +474,7 @@ function lib:StartTransport()
     C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
 
     local me = myNetworkName()
+    self._me = me   -- le fanout ne s'écrit jamais à lui-même
     local f = CreateFrame("Frame", "CraftLinkTransportFrame")
     f:RegisterEvent("CHAT_MSG_ADDON")
     f:RegisterEvent("CHAT_MSG_CHANNEL")        -- balises TEXTE de découverte (voir SendBeacon)
@@ -491,6 +489,7 @@ function lib:StartTransport()
     lib:_InstallInputDrain()
 
     self:JoinNetwork()
+    if self._autoJoin == false and self._StartOffline then self:_StartOffline() end   -- réseau sans canal
     if C_Timer and C_Timer.NewTicker then
         C_Timer.NewTicker(WATCHDOG, function() lib:_Watchdog() end)
     end
