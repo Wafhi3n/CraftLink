@@ -90,13 +90,15 @@ end
 -- Recettes APPRISES de la ligne ouverte, en spellID. On EXIGE la preuve (`info.learned == true`,
 -- champ vérifié dans Blizzard_ProfessionsCrafting.lua).
 --
--- ⚠️ Les DEUX énumérateurs rendent aussi les recettes NON APPRISES : `GetAllRecipeIDs` par nature,
--- et `GetFilteredRecipeIDs` parce que `Professions.SetDefaultFilters` (Blizzard_Professions.lua)
--- pose `SetShowUnlearned(true)` à CHAQUE ouverture de la fenêtre. Le repli qui vivait ici prenait
--- la liste TELLE QUELLE quand `GetRecipeInfo` manquait, sur l'idée fausse que la liste filtrée ne
--- contenait que l'appris : il aurait diffusé des recettes que le perso ne connaît pas. Sans
--- `GetRecipeInfo` on ne peut RIEN prouver — on rend donc un set VIDE. Une donnée manquante vaut
--- toujours mieux qu'une donnée fausse.
+-- ⚠️ Aucun énumérateur ne dit ce qui est APPRIS. `GetAllRecipeIDs` rend les non apprises par
+-- nature. `GetFilteredRecipeIDs` suit le filtre `SetShowUnlearned`, et ce filtre a changé de SENS
+-- avec un patch : Blizzard le posait à `true` à chaque ouverture de la fenêtre jusqu'au build 69977,
+-- et Camelot le force à `false` à chaque génération de la liste depuis le 70058 (2026-09-29,
+-- `Blizzard_ProfessionsTemplates/Camelot/Blizzard_Professions.lua`). Seul `info.learned` fait foi.
+-- Le repli qui vivait ici prenait la liste TELLE QUELLE quand `GetRecipeInfo` manquait, sur l'idée
+-- fausse qu'elle ne contenait que l'appris : il aurait diffusé des recettes que le perso ne connaît
+-- pas. Sans `GetRecipeInfo` on ne peut RIEN prouver — on rend donc un set VIDE. Une donnée
+-- manquante vaut toujours mieux qu'une donnée fausse.
 local function modernKnownSet()
     local c, set = C_TradeSkillUI, {}
     local enum = modernEnumerator()
