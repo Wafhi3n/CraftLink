@@ -213,8 +213,20 @@ end
 -- fn() : appelé à chaque arrivée dans la salle (rejoint, ou ré-acquis par le chien de garde).
 function lib:OnRoomJoined(fn) self._roomCb = fn end
 
+-- Le bonjour attend ROOM_HELLO_DELAY : relevé du 2026-09-29, après /co channel room off puis on, le client
+-- rendait l'index du canal tout de suite (il le croyait encore rejoint) et le bonjour parti dans la
+-- seconde a été refusé par le serveur (InvalidChannel). Au login, les essais de résolution faisaient déjà
+-- attendre. Si la salle a été quittée entre-temps, pas de bonjour.
+local ROOM_HELLO_DELAY = 2
+
 function lib:_RoomReady()
     if self._hideChannel then self._hideChannel() end
     trace("net", "salle de découverte rejointe (idx=" .. tostring(self._channelIndex) .. ") : bonjour aux présents")
-    if self._roomCb then pcall(self._roomCb) end
+    local cb = self._roomCb
+    if not cb then return end
+    if C_Timer and C_Timer.After then
+        C_Timer.After(ROOM_HELLO_DELAY, function() if lib:RoomJoined() then pcall(cb) end end)
+    else
+        pcall(cb)
+    end
 end
