@@ -19,7 +19,7 @@ local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
 -- Anti-clobber, même règle que Transport : BUMP à chaque évolution, et resync de TOUS les hôtes.
-local FANOUT_REV = 1
+local FANOUT_REV = 2   -- 2 : tout refus du jeu est tracé (crier hors instance : InvalidChatType)
 if (lib._fanoutRev or 0) >= FANOUT_REV then return end
 lib._fanoutRev = FANOUT_REV
 
@@ -36,6 +36,9 @@ local RES = (Enum and Enum.SendAddonMessageResult) or {}
 local RES_THROTTLE = RES.AddonMessageThrottle or 3
 local RES_LOCKDOWN = RES.AddOnMessageLockdown or 11   -- verrouillage d'instance : refusé, sans reprise utile
 local RES_OFFLINE  = RES.TargetOffline or 12
+local RES_SUCCESS  = RES.Success or 0
+local RES_NAME = {}                                    -- code -> nom, pour une trace lisible
+for name, code in pairs(RES) do RES_NAME[code] = name end
 
 lib._recentSends = lib._recentSends or {}   -- [cible \0 message] = instant d'enfilage
 lib._lastWhisper = lib._lastWhisper or {}   -- [cible] = instant du dernier whisper parti
@@ -140,6 +143,11 @@ function lib:_OnSendResult(item, res)
         -- Pas de reprise : le verrou dure toute la rencontre, et un message rejoué tard ment (commande
         -- annulée depuis). La trace est la seule preuve qu'un envoi est tombé en instance.
         trace("send", "verrouillage d'instance : message perdu : " .. item.payload:sub(1, 40))
+    elseif type(res) == "number" and res ~= RES_SUCCESS then
+        -- Tout autre refus. La ligne « [send] » est écrite AVANT l'envoi : sans celle-ci, un message que
+        -- le jeu refuse passait pour parti. Vécu : le PING crié de COC, InvalidChatType hors instance sur
+        -- Forever, tracé « [send] yell : PING » pendant des semaines (banc des constats C9, 2026-09-29).
+        trace("send", ("refusé par le jeu (%s) : %s"):format(RES_NAME[res] or tostring(res), item.payload:sub(1, 40)))
     end
     return nil
 end
