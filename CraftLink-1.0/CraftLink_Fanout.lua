@@ -19,7 +19,7 @@ local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
 -- Anti-clobber, même règle que Transport : BUMP à chaque évolution, et resync de TOUS les hôtes.
-local FANOUT_REV = 2   -- 2 : tout refus du jeu est tracé (crier hors instance : InvalidChatType)
+local FANOUT_REV = 3   -- 3 : salle de découverte ; 2 : tout refus du jeu est tracé (InvalidChatType)
 if (lib._fanoutRev or 0) >= FANOUT_REV then return end
 lib._fanoutRev = FANOUT_REV
 
@@ -51,9 +51,10 @@ function lib:SetPeerSource(fn) self._peerSource = fn end
 -- fn(nom) : un envoi vers ce joueur a répondu « cible hors ligne ».
 function lib:OnPeerOffline(fn) self._peerOfflineCb = fn end
 
--- "channel" | "whisper" | nil (pas encore prêt) — pour le statut du produit.
+-- "channel" | "whisper" | nil (pas encore prêt) — pour le statut du produit. La salle de découverte ne
+-- change pas le mode : « à tous » y reste en whisper.
 function lib:NetworkMode()
-    if self._channelJoined then return "channel" end
+    if self._channelJoined and self._autoJoin ~= false then return "channel" end
     if self._offlineReady then return "whisper" end
     return nil
 end
@@ -177,9 +178,43 @@ function lib:_StartOffline()
         lib._offlinePending = nil
         if lib._autoJoin ~= false or lib._offlineReady then return end   -- canal repris entre-temps
         lib._offlineReady = true
-        lib:_LeaveStaleChannel()
+        if not lib._discovery then lib:_LeaveStaleChannel() end   -- la salle, elle, reste
         trace("net", "réseau SANS canal : « global » part en whisper vers les pairs en ligne")
         lib:_FireReady()
     end
     if C_Timer and C_Timer.After then C_Timer.After(READY_DELAY, go) else go() end
+end
+
+-- ------------------------------------------------------------------
+-- Salle de découverte
+-- ------------------------------------------------------------------
+-- Sur Forever, le canal custom est découpé en salles (2026-09-27) : il ne peut plus porter les données
+-- d'un réseau, qui passent en whisper vers les pairs connus. Mais un inconnu, lui, n'est jamais connu.
+-- Le banc des constats (2026-09-29) a fermé toutes les autres voies globales (communauté, canaux du jeu,
+-- crier) et prouvé que le message d'addon passe DANS une salle. D'où la salle : le canal est rejoint
+-- (même garde anti-/1, caché des fenêtres) pour SE PRÉSENTER aux porteurs de la même salle, pas pour
+-- transporter. « global » reste en whisper ; seule la portée « room » y écrit. Chaque arrivée prévient
+-- le produit (OnRoomJoined), qui y dit bonjour ; les présents répondent en whisper, et deviennent connus.
+function lib:SetDiscovery(on)
+    self._discovery = (on == true)
+    if self._autoJoin ~= false then return end          -- canal plein : la salle n'a pas de sens
+    if self._discovery then
+        if self._transportStarted then self:JoinNetwork() end
+    elseif self._channelJoined then
+        self:LeaveNetwork()
+    end
+end
+
+-- La salle est-elle rejointe (réseau sans canal, découverte active) ?
+function lib:RoomJoined()
+    return self._autoJoin == false and self._discovery == true and self._channelJoined == true
+end
+
+-- fn() : appelé à chaque arrivée dans la salle (rejoint, ou ré-acquis par le chien de garde).
+function lib:OnRoomJoined(fn) self._roomCb = fn end
+
+function lib:_RoomReady()
+    if self._hideChannel then self._hideChannel() end
+    trace("net", "salle de découverte rejointe (idx=" .. tostring(self._channelIndex) .. ") : bonjour aux présents")
+    if self._roomCb then pcall(self._roomCb) end
 end

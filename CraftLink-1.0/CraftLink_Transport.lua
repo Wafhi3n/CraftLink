@@ -27,7 +27,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 15   -- 15 : réseau SANS canal — « global » en whisper vers les pairs (CraftLink_Fanout)
+local TRANSPORT_REV = 16   -- 16 : salle de découverte — canal rejoint pour se présenter, « global » reste en whisper
                            -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
                            -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
@@ -122,7 +122,7 @@ function lib:SetAutoJoin(enabled)
     self:LeaveNetwork()
     if self._transportStarted and self._StartOffline then self:_StartOffline() end   -- bascule en cours de session
 end
-function lib:GlobalChannelKind()    return self._channelJoined and "custom" or nil end
+function lib:GlobalChannelKind()    return (self._channelJoined and self._autoJoin ~= false) and "custom" or nil end
 
 -- Label humain du canal global ACTIF (pour le statut produit).
 function lib:GlobalChannelLabel() return self._channelName or CHANNEL_NAME end
@@ -147,6 +147,7 @@ local function hideChannelFromFrames()
     end
 end
 
+lib._hideChannel = hideChannelFromFrames   -- la salle de découverte (CraftLink_Fanout) se cache aussi
 function lib:_FireReady()   -- méthode, pas locale : CraftLink_Fanout la déclenche aussi (réseau sans canal)
     trace("net", "réseau prêt (canal idx=" .. tostring(lib._channelIndex) .. ") → ready callbacks")
     hideChannelFromFrames()
@@ -191,7 +192,7 @@ end
 function lib:JoinNetwork(attempt)
     attempt = attempt or 1
     if self._channelJoined then return end
-    if self._autoJoin == false then return end   -- opt-out produit : pas de portée "global"
+    if self._autoJoin == false and not self._discovery then return end   -- ni canal, ni salle de découverte
     self._joinSince = self._joinSince or (GetTime and GetTime() or 0)
     if not slot1Taken() and GetTime and (GetTime() - self._joinSince) < 10
        and C_Timer and C_Timer.After then
@@ -205,7 +206,7 @@ function lib:JoinNetwork(attempt)
     if idx and idx > 0 then
         self._channelIndex  = idx
         self._channelJoined = true
-        lib:_FireReady()
+        if self._autoJoin == false then lib:_RoomReady() else lib:_FireReady() end   -- salle : pas « réseau prêt »
     elseif attempt < 15 and C_Timer and C_Timer.After then
         trace("net", "join tentative " .. attempt .. " — index pas encore résolu")
         C_Timer.After(JOIN_RETRY, function() lib:JoinNetwork(attempt + 1) end)
@@ -217,7 +218,7 @@ end
 -- Watchdog : ré-résout l'index et rejoint si le canal a été perdu (reload, kick, etc.).
 function lib:_Watchdog()
     self:_TrimTextQueue()                    -- purge des lignes canal périmées (hors du chemin d'input)
-    if self._autoJoin == false then
+    if self._autoJoin == false and not self._discovery then
         if self._LeaveStaleChannel then self:_LeaveStaleChannel() end   -- une salle restée d'avant (/reload)
         return
     end
@@ -230,7 +231,7 @@ function lib:_Watchdog()
             self._channelJoined = true
             if not was then
                 trace("net", "watchdog : canal ré-acquis (idx=" .. idx .. ")")
-                lib:_FireReady()
+                if self._autoJoin == false then lib:_RoomReady() else lib:_FireReady() end
             end
         end
     else
@@ -254,7 +255,7 @@ local function rawSend(payload, scope, target)
         if target and target ~= "" then return C_ChatInfo.SendAddonMessage(PREFIX, payload, "WHISPER", target) end
     elseif scope == "say" or scope == "yell" then
         return C_ChatInfo.SendAddonMessage(PREFIX, payload, scope == "yell" and "YELL" or "SAY")
-    else -- "global"
+    else -- "global" (canal plein) ou "room" (salle de découverte : Send ne la détourne pas en whisper)
         if lib._channelIndex then
             return C_ChatInfo.SendAddonMessage(PREFIX, payload, "CHANNEL", lib._channelIndex)
         end
