@@ -23,6 +23,9 @@ Source canonique unique ; **pas un addon installé séparément**.
   données en WHISPER dirigé. **Sans canal** (`CraftLink_Fanout.lua`, le cas de Forever où le canal
   est morcelé) : la portée « global » part en whisper vers les pairs que l'hôte désigne
   (`SetPeerSource`), avec plafond, anti-doublon et lecture du code de `SendAddonMessage`.
+  **Qui parle ?** (`CraftLink_Sender.lua`, chargé avant le transport) : nom court, royaume admis, et
+  lisibilité — un message dont le texte ou l'émetteur est une valeur SECRÈTE (chat en instance sur
+  Forever) est laissé passer avant toute comparaison.
 
 > Ce qui touche les **gens** (présence, profils, favoris, réputation) **n'est pas** ici — ça vit
 > dans le produit *Crafting Order - Classic*. CraftLink ne connaît ni l'UI ni le skin de l'hôte.

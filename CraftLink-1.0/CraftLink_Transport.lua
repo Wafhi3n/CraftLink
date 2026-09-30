@@ -27,7 +27,8 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 16   -- 16 : salle de découverte — canal rejoint pour se présenter, « global » reste en whisper
+local TRANSPORT_REV = 17   -- 17 : valeurs SECRÈTES du chat écartées ; pas de balise texte sans canal ; API non dépréciées
+                           -- 16 : salle de découverte — canal rejoint pour se présenter, « global » reste en whisper
                            -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
                            -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
 if (lib._transportRev or 0) >= TRANSPORT_REV then return end
@@ -139,11 +140,14 @@ end
 -- Retire NOTRE canal de l'affichage de TOUTES les fenêtres de chat (trafic technique invisible au
 -- joueur) : double sécurité par-dessus JoinTemporaryChannel (déjà frame-less). N'affecte PAS la réception
 -- (l'event CHAT_MSG_CHANNEL arrive au handler indépendamment de l'affichage). Appelé à chaque acquisition.
+-- La méthode du cadre d'abord : `ChatFrame_RemoveChannel` n'est qu'un alias posé par
+-- Blizzard_DeprecatedChatInfo, que le réglage `loadDeprecationFallbacks` peut ne pas charger.
 local function hideChannelFromFrames()
     local name = lib._channelName or CHANNEL_NAME
     for i = 1, (NUM_CHAT_WINDOWS or 10) do
         local cf = _G["ChatFrame" .. i]
-        if cf and ChatFrame_RemoveChannel then pcall(ChatFrame_RemoveChannel, cf, name) end
+        local remove = cf and (cf.RemoveChannel or ChatFrame_RemoveChannel)
+        if remove then pcall(remove, cf, name) end
     end
 end
 
@@ -154,27 +158,10 @@ function lib:_FireReady()   -- méthode, pas locale : CraftLink_Fanout la décle
     for _, fn in ipairs(lib._readyCbs) do pcall(fn) end
 end
 
-local function playerShort(name)
-    if not name then return nil end
-    return name:match("^([^%-]+)") or name
-end
-
--- Confinement ROYAUME : le canal custom peut être partagé entre royaumes CONNECTÉS (voire au-delà). Les
--- DONNÉES de canal (découverte, ordres) ne valent que pour des joueurs avec qui on peut réellement
--- échanger → on n'accepte que le royaume courant + les royaumes connectés (GetAutoCompleteRealms).
--- L'émetteur d'un event canal porte un suffixe « -Royaume » (normalisé, sans espace) s'il n'est PAS sur
--- notre royaume ; pas de suffixe = même royaume. Les noms de perso ne contiennent jamais de « - » (WoW).
-local function sameRealmGroup(author)
-    if type(author) ~= "string" then return false end
-    local realm = author:match("%-(.+)$")
-    if not realm then return true end                       -- pas de suffixe = mon royaume exact
-    local mine = GetNormalizedRealmName and GetNormalizedRealmName()
-    if mine and realm == mine then return true end
-    if GetAutoCompleteRealms then
-        for _, r in ipairs(GetAutoCompleteRealms() or {}) do if r == realm then return true end end
-    end
-    return false
-end
+-- Qui parle ? (CraftLink_Sender, chargé avant nous) : nom court, royaume admis, lisibilité.
+local playerShort    = lib._PlayerShort
+local sameRealmGroup = lib._SameRealmGroup
+local unreadable     = lib._Unreadable
 
 -- ------------------------------------------------------------------
 -- Anti-slot-/1 : les canaux par défaut (General/Trade…) ne sont joints qu'APRÈS l'entrée en jeu. Si on
@@ -295,13 +282,15 @@ end
 -- de l'appel, pas une erreur Lua → hors input : popup d'erreur ET envoi faussement compté « parti ».
 -- Les émetteurs hors input (login, ticker) passent donc par QueueText. Retourne true SEULEMENT si l'appel
 -- a été tenté (ni canal absent, ni throttlé) — ce qui, sous input, vaut « parti ».
+-- `C_ChatInfo.SendChatMessage` d'abord : le global n'est qu'un alias déprécié (Blizzard_DeprecatedChatInfo).
 local function sendChannelLine(line, minInterval, lastKey)
-    if not (SendChatMessage and lib._channelIndex) then return false end
+    local send = (C_ChatInfo and C_ChatInfo.SendChatMessage) or SendChatMessage
+    if not (send and lib._channelIndex) then return false end
     local t = (GetTime and GetTime()) or 0
     if t - (lib[lastKey] or 0) < minInterval then return false end
     lib[lastKey] = t
     trace("send", "canal(texte) : " .. line:sub(1, 60))
-    local ok = pcall(SendChatMessage, line, "CHANNEL", nil, lib._channelIndex)
+    local ok = pcall(send, line, "CHANNEL", nil, lib._channelIndex)
     if not ok then trace("send", "canal(texte) ÉCHOUÉ (hardware event ?) : " .. line:sub(1, 40)) end
     return ok
 end
@@ -314,7 +303,10 @@ end
 
 -- Balise TEXTE de découverte (le NOM de l'émetteur, porté par l'event, suffit → `extra` optionnel/court).
 -- Masquée du chat par le filtre. Throttlée dur (anti-flood ; SendChatMessage subit l'anti-spam serveur).
+-- Sans canal, pas de balise, même salle rejointe : la salle se présente par un message d'ADDON (portée
+-- « room »). Une ligne de TEXTE y arrivait SECRÈTE chez chaque porteur en donjon (TRANSPORT_REV 17).
 function lib:SendBeacon(extra)
+    if self._autoJoin == false then return false end
     return sendChannelLine(BEACON_TAG .. (extra and (" " .. extra) or ""), BEACON_MIN_INTERVAL, "_lastBeacon")
 end
 
@@ -416,12 +408,13 @@ end
 -- CHAT_MSG_CHANNEL : texte de NOTRE canal (arg1 texte, arg2 émetteur, arg8 n°, arg9 nom). Deux formes :
 --   * balise `CLNK1` → découverte (beaconCb) ;   * données `CLD1 ` → message CraftLink dispatché par verbe.
 local function onChannelText(me, ...)
-    local text = (...)
+    local text, author = ...
+    local chanNum, chanName = select(8, ...)
     -- Gardes ORDONNÉES du moins cher au plus cher : le canal Deathlog (royaume HC) crache des dizaines
     -- de messages/s → on écarte d'abord par index de canal (numérique) AVANT tout string:match sur l'auteur.
-    if type(text) ~= "string" or not isMyChannel(select(8, ...), select(9, ...))
-       or not isTechChannelText(text) then return end
-    local author = select(2, ...)
+    -- Chaque valeur est reconnue lisible AVANT d'être comparée ou indexée (valeurs secrètes, cf. Sender).
+    if type(text) ~= "string" or unreadable(chanNum, chanName) or not isMyChannel(chanNum, chanName) then return end
+    if unreadable(text, author) or not isTechChannelText(text) then return end
     local who = playerShort(author)
     if who == me or not sameRealmGroup(author) then return end   -- soi-même / confinement royaume
     if text:sub(1, #BEACON_TAG) == BEACON_TAG and lib._beaconCb then
@@ -437,18 +430,22 @@ end
 local function onPresenceEvent(event, ...)
     if not lib._presenceCb then return end
     local who = select(2, ...)
-    if not isMyChannel(select(8, ...), select(9, ...)) then return end
+    local chanNum, chanName = select(8, ...)
+    if unreadable(who, chanNum, chanName) or not isMyChannel(chanNum, chanName) then return end
     local kind = (event == "CHAT_MSG_CHANNEL_JOIN") and "join" or "leave"
     trace("pres", kind .. " " .. tostring(playerShort(who)))
     pcall(lib._presenceCb, kind, playerShort(who))
 end
 
 -- Masque les balises texte de NOTRE canal du chat du joueur (trafic technique invisible pour lui).
+-- `ChatFrameUtil` d'abord : `ChatFrame_AddMessageEventFilter` n'est qu'un alias déprécié. Sur Forever,
+-- Blizzard n'appelle pas le filtre quand un argument est secret (ChatFrameFilters.lua) : pas de garde ici.
 local function installBeaconFilter()
-    if not ChatFrame_AddMessageEventFilter or lib._beaconFilterInstalled then return end
+    local add = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
+    if not add or lib._beaconFilterInstalled then return end
     lib._beaconFilterInstalled = true
     -- Filtre : signature décalée de (self, event) → chanNum = arg8 (10e param), chanName = arg9 (11e).
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL",
+    add("CHAT_MSG_CHANNEL",
         function(_, _, msg, _, _, _, _, _, _, chanNum, chanName)
             if isMyChannel(chanNum, chanName) and isTechChannelText(msg) then
                 return true   -- avale la ligne technique (balise ou données) : invisible dans le chat
@@ -457,24 +454,13 @@ local function installBeaconFilter()
         end)
 end
 
--- Nom RÉSEAU du joueur, celui que le serveur met en émetteur de NOS messages (écho du canal compris).
--- Forever : « Prénom Nom » ; UnitName n'en rend que le prénom, GetUnitName les recolle (Camelot/
--- NameUtil.lua ; relevé 2026-09-27). Comparer au prénom laissait notre écho entrer dans l'annuaire.
-local function myNetworkName()
-    if GetUnitName then
-        local ok, n = pcall(GetUnitName, "player", true)
-        if ok and type(n) == "string" and n ~= "" then return n end
-    end
-    return UnitName and UnitName("player") or "?"
-end
-
 function lib:StartTransport()
     if self._transportStarted then return end
     if not (C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix) then return end
     self._transportStarted = true
     C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
 
-    local me = myNetworkName()
+    local me = lib._MyNetworkName()
     self._me = me   -- le fanout ne s'écrit jamais à lui-même
     local f = CreateFrame("Frame", "CraftLinkTransportFrame")
     f:RegisterEvent("CHAT_MSG_ADDON")
