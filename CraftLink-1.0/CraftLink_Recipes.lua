@@ -26,7 +26,7 @@ if not lib then return end
 -- passer par le gate de version de LibStub:NewLibrary (qui ne protège que le fichier principal). Sans
 -- ce garde, une copie embarquée plus ANCIENNE chargée APRÈS nous écraserait EncodeKnown/ScanOpenKnown/…
 -- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution du codec RK (+ resync hôtes).
-local RECIPES_REV = 6   -- 6 : rien capté sur le métier d'un AUTRE ; 5 : `GetAllRecipeIDs` rétablie
+local RECIPES_REV = 7   -- 7 : retrait sur PREUVE ; 6 : rien capté sur le métier d'un AUTRE ; 5 : `GetAllRecipeIDs` rétablie
 if (lib._recipesRev or 0) >= RECIPES_REV then return end
 lib._recipesRev = RECIPES_REV
 
@@ -97,17 +97,22 @@ end
 -- contenait que l'appris : il aurait diffusé des recettes que le perso ne connaît pas. Sans
 -- `GetRecipeInfo` on ne peut RIEN prouver — on rend donc un set VIDE. Une donnée manquante vaut
 -- toujours mieux qu'une donnée fausse.
+-- Second retour : les recettes que le client déclare EXPLICITEMENT non apprises (`learned == false`,
+-- pas un champ absent, pas une info nil) -- la seule preuve qui autorise un retrait (ScanOpenKnown).
 local function modernKnownSet()
-    local c, set = C_TradeSkillUI, {}
+    local c, set, unlearned = C_TradeSkillUI, {}, {}
     local enum = modernEnumerator()
-    if not (c and enum and c.GetRecipeInfo) then return set end
+    if not (c and enum and c.GetRecipeInfo) then return set, unlearned end
     local ok, list = pcall(enum)
-    if not (ok and type(list) == "table") then return set end
+    if not (ok and type(list) == "table") then return set, unlearned end
     for _, id in ipairs(list) do
         local ok2, info = pcall(c.GetRecipeInfo, id)
-        if ok2 and type(info) == "table" and info.learned == true then set[id] = true end
+        if ok2 and type(info) == "table" then
+            if info.learned == true then set[id] = true
+            elseif info.learned == false then unlearned[id] = true end
+        end
     end
-    return set
+    return set, unlearned
 end
 
 -- Métier canonique de la fenêtre ouverte, ou nil. Rendait auparavant (prof, isCraft, isModern) :
@@ -142,7 +147,8 @@ function lib:IsOwnProfessionOpen()
     return true
 end
 
--- Lit la fenêtre ouverte → (profCanonical, set{spellID=true}). set vide si rien capté.
+-- Lit la fenêtre ouverte → (profCanonical, set{spellID=true}, unlearned{spellID=true}). set vide si
+-- rien capté ; unlearned = ce que le client déclare non appris (nil sur un métier qui n'est pas lu).
 -- Le métier d'un AUTRE est nommé mais jamais capté : ses recettes ne sont pas les miennes.
 function lib:ReadOpenKnown()
     local prof = self:OpenProfession()
@@ -152,15 +158,30 @@ function lib:ReadOpenKnown()
 end
 
 -- Scan + union dans l'état partagé. Retourne (prof, changed). L'hôte décide quoi faire de
--- `changed` (sauvegarder sa SV, diffuser le RK). Union (jamais retrait) : un scan partiel
--- (liste pas encore peuplée) ne régresse pas.
+-- `changed` (sauvegarder sa SV, diffuser le RK). Union : un scan partiel (liste pas encore
+-- peuplée) ne régresse pas -- une recette ABSENTE de la liste n'est jamais retirée.
+--
+-- ⚠️ MAIS UNE UNION SANS RETRAIT GARDE SES ERREURS À VIE. Relevé le 2026-10-02 dans une
+-- SavedVariable : un mineur de rang 66 « connaissait » Smelt Tin, Smelt Bronze et Lodestone --
+-- exactement les recettes apprenables à son rang, PAS apprises (le formateur les lui proposait). Une
+-- capture d'avant le 2026-09-21 prenait la liste telle quelle (cf. modernKnownSet) ; corrigée
+-- depuis, ses entrées restaient, cachées des Manquantes et DIFFUSÉES aux autres joueurs. Un perso
+-- du même compte capté après la correction (rang 82) n'en avait aucune : la capture est saine, seul
+-- le stock était faux.
+-- D'où le RETRAIT SUR PREUVE : une recette sort du set quand le client, sur MON métier ouvert, la
+-- déclare explicitement non apprise -- et seulement si le même passage a prouvé au moins une recette
+-- apprise (fenêtre chargée : une liste encore vide d'infos ne vide pas le set). Un retrait à tort
+-- se répare au passage suivant, qui la reverra apprise.
 function lib:ScanOpenKnown()
-    local prof, set = self:ReadOpenKnown()
+    local prof, set, unlearned = self:ReadOpenKnown()
     if not prof or not set or not next(set) then return prof, false end
     local known = self.myKnown[prof]; if not known then known = {}; self.myKnown[prof] = known end
     local changed = false
     for sid in pairs(set) do
         if not known[sid] then known[sid] = true; changed = true end
+    end
+    for sid in pairs(unlearned or {}) do
+        if known[sid] then known[sid] = nil; changed = true end
     end
     return prof, changed
 end
