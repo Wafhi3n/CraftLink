@@ -33,16 +33,23 @@ end
 -- live = { [spellID] = { produces=, learnedAt=, ... } } (parseAll) ; have = set des recettes commitées.
 -- Ne regarde que les recettes présentes DES DEUX CÔTÉS : une recette disparue est déjà une perte,
 -- la compter une seconde fois ici brouillerait le bilan. Rend (champs complétés, champs perdus/changés).
-function M.fieldDrift(live, have, content)
+--
+-- `observed` (optionnel) = { [champ] = { [spellID] = valeur vue EN JEU } }, passé seulement sur une
+-- saveur en BÊTA, où le relevé l'emporte sur Wowhead (cf. gen_flavor.lua, `beta`). Une valeur commitée
+-- ÉGALE au relevé n'est pas une perte quand la page dit autre chose : c'est le relevé qui a gagné, et la
+-- régénération l'écrira de nouveau. Sans ça, chaque niveau corrigé en jeu faisait échouer -check à
+-- vie (81 le 2026-10-03), et la boucle refresh_flavor.ps1 n'appliquait plus jamais rien.
+function M.fieldDrift(live, have, content, observed)
     local gained, changed = 0, 0
     for _, field in ipairs(M.FIELDS) do
         local committed = M.committedMap(content, field)
+        local seen = observed and observed[field] or {}
         for id in pairs(have) do
             if live[id] then
                 local lv, cv = live[id][field], committed[id]
                 if lv ~= nil and cv == nil then
                     gained = gained + 1
-                elseif cv ~= nil and lv ~= cv then
+                elseif cv ~= nil and lv ~= cv and seen[id] ~= cv then
                     changed = changed + 1
                 end
             end

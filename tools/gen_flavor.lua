@@ -382,7 +382,8 @@ local function checkProf(f)
     local add, del = 0, 0
     for id in pairs(live) do if not have[id] then add = add + 1 end end
     for id in pairs(have) do if not live[id] then del = del + 1 end end
-    local gained, changed = Drift.fieldDrift(live, have, content)
+    -- En bêta, un niveau commité qui vient d'un relevé en jeu n'est pas une perte (cf. flavor_drift).
+    local gained, changed = Drift.fieldDrift(live, have, content, obsBeta and { learnedAt = obsRank } or nil)
     if del > 0 or changed > 0 then
         print(string.format("  [PERTE]        %-16s commitées=%-5d ajouts=%-4d PERTES=%d  champs perdus/changés=%d",
             f, nHave, add, del, changed))
