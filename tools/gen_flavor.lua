@@ -259,8 +259,20 @@ local function collate(recipes, ids)
             obsStat.comble = obsStat.comble + 1
         end
     end
-    table.sort(i2s, function(a, b) return a[1] < b[1] end)
-    return produces, i2s, reag, la
+    -- ⚠️ UN OBJET, UN SORT dans `itemToSpell`. Deux sorts peuvent fabriquer le même objet (7076,
+    -- Essence of Earth : 17560 et 17565). Les deux lignes donnaient une clé en double où seule la
+    -- dernière compte, et l'ordre des égalités de `table.sort` n'est pas stable : le gagnant
+    -- basculait d'une génération à l'autre (217287 : 439134 sur main, 14810 le 2026-10-03). On trie
+    -- aussi sur le sort et on garde le PLUS PETIT -- la recette d'origine, les variantes venant après.
+    table.sort(i2s, function(a, b)
+        if a[1] ~= b[1] then return a[1] < b[1] end
+        return a[2] < b[2]
+    end)
+    local uniq = {}
+    for _, p in ipairs(i2s) do
+        if not (uniq[#uniq] and uniq[#uniq][1] == p[1]) then uniq[#uniq + 1] = p end
+    end
+    return produces, uniq, reag, la
 end
 
 local HEADER = [[

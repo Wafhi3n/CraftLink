@@ -150,12 +150,21 @@ end
 
 -- Bloc sentinellisé + compteurs par nature. Restreint aux recettes que le fichier connaît : un
 -- objet dont le sort n'est pas dans `taughtBy` n'a rien à faire ici.
+-- ⚠️ UN SORT, UNE NATURE. Deux objets-plans peuvent enseigner le même sort : « Pattern: Warbear
+-- Harness » existe en deux objets (15742 et 20253), l'un en butin, l'autre chez un marchand. Écrits tels quels,
+-- ils donnaient deux fois `[19068]` dans la même table : en Lua seule la dernière ligne compte, et
+-- l'ordre des égalités de `table.sort` n'est pas stable -- la nature basculait d'une génération à
+-- l'autre (relevé le 2026-10-03). On garde la nature préférée (PREF) parmi tous les plans du sort.
+local RANK = {}
+for i, k in ipairs(PREF) do RANK[k] = i end
 local function renderUnit(kinds, taught, sourceNote)
-    local rows, count = {}, { vendor = 0, drop = 0, quest = 0 }
+    local best, count = {}, { vendor = 0, drop = 0, quest = 0 }
     for itemID, kind in pairs(kinds) do
         local sid = taught[itemID]
-        if sid then rows[#rows + 1] = { sid, kind }; count[kind] = count[kind] + 1 end
+        if sid and (not best[sid] or RANK[kind] < RANK[best[sid]]) then best[sid] = kind end
     end
+    local rows = {}
+    for sid, kind in pairs(best) do rows[#rows + 1] = { sid, kind }; count[kind] = count[kind] + 1 end
     table.sort(rows, function(a, b) return a[1] < b[1] end)
     local out = { MARK_OPEN .. " (généré — " .. sourceNote .. " ; ne pas éditer à la main)" }
     out[#out + 1] = "    -- où s'obtient le PLAN : [spellID] = \"vendor\" | \"drop\" | \"quest\""
