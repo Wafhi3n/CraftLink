@@ -135,9 +135,9 @@ CraftLink:RegisterProfession("First Aid", {
         [23787] = 300,
         [470349] = 315,
         [1230117] = 20,
-        [1244431] = 55,
-        [1244432] = 85,
-        [1244433] = 135,
+        [1244431] = 1,
+        [1244432] = 55,
+        [1244433] = 110,
         [1244434] = 175,
         [1244435] = 230,
         [1244436] = 290,
@@ -189,7 +189,6 @@ CraftLink:RegisterProfession("First Aid", {
         [18630] = { 290, 290, 320, 350 },
         [23787] = { 300, 300, 330, 360 },
         [470349] = { 0, 315, 327, 340 },
-        [1230117] = { 0, 20, 22, 25 },
         [1244431] = { 0, 55, 75, 95 },
         [1244432] = { 0, 85, 105, 125 },
         [1244433] = { 0, 135, 155, 175 },
@@ -204,8 +203,6 @@ CraftLink:RegisterProfession("First Aid", {
         [1259347] = { 0, 120, 155, 190 },
         [1259348] = { 0, 220, 250, 280 },
         [1259349] = { 0, 280, 310, 340 },
-        [1262996] = { 0, 140, 142, 145 },
-        [1263001] = { 0, 300, 300, 300 },
     },
     -- <<< gen_skill_colors.lua
 
@@ -218,6 +215,8 @@ CraftLink:RegisterProfession("First Aid", {
         [10840] = "vendor",
         [23787] = "vendor",
         [470349] = "vendor",
+        [1244436] = "vendor",
+        [1259343] = "drop",
     },
     -- <<< gen_sources.lua
 
@@ -227,37 +226,38 @@ CraftLink:RegisterProfession("First Aid", {
     -- Le SENS des entrées vient de `recipeSource` ; `kind =` ne figure que quand
     -- la nature a été DÉDUITE de la page d'objet, faute de réponse de la page de métier.
     recipeOrigin = {
-        [3276] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
-        [3277] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
-        [3278] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
-        [7928] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [3276] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [3277] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [3278] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [7928] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [7929] = { { 2805, 45, "Deneb Walker", "A" }, { 13476, 15, "Balai Lok'Wein", "H" } },
-        [7934] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [7934] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [7935] = { { 2411, 36, "Ricter", nil }, { 4814, 719, "Twilight Elementalist", nil }, { 4437, 491, "Razorfen Warden", nil } },
         [10840] = { { 2805, 45, "Deneb Walker", "A" }, { 13476, 15, "Balai Lok'Wein", "H" } },
         [23787] = { { 10856, 85, "Argent Quartermaster Hasana", nil }, { 10857, 28, "Argent Quartermaster Lightspark", nil } },
         [470349] = { { 17068, 1377, "Chief Expeditionary Requisitioner Enkles", "A" }, { 17070, 1377, "Apothecary Quinard", "H" } },
-        [1230117] = { kind = "trainer", { 251977, 36, "Angelique Butler", nil }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4211, 1657, "Dannelor", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1230117] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [1244431] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [1244432] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
         [1244433] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
-        [1244436] = { kind = "vendor", { 266901, 616, "Pexmit", nil } },
+        [1244436] = { { 266901, 616, "Pexmit", nil } },
         [1259342] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
+        [1259343] = { { 910, 10, "Defias Enchanter", nil } },
         [1259347] = { kind = "trainer", { 251977, 36, "Angelique Butler", "A" }, { 3373, 1637, "Arnok", "H" }, { 6094, 141, "Byancie", "A" }, { 4591, 1497, "Mary Edras", "H" }, { 257007, 16593, "Melasa Fairmend", nil }, { 257018, 16593, "Naleeia Tattermend", nil } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
     recipePrice = {
         [7929] = 2200,
         [10840] = 5000,
-        [23787] = 105882,
-        [470349] = 110000,
+        [23787] = 105263,
+        [470349] = 115789,
         [1244436] = 80000,
     },
     npcSpot = {
+        [910] = { 1431, 21.0, 72.2 },
         [2411] = { 1416, 19.4, 84.8 },
         [2805] = { 1417, 27.0, 58.8 },
         [3373] = { 1454, 34.0, 84.4 },
-        [4211] = { 1457, 51.4, 12.4 },
         [4591] = { 1458, 73.4, 55.4 },
         [6094] = { 1438, 55.2, 56.8 },
         [10856] = { 1420, 83.2, 68.2 },
@@ -268,8 +268,7 @@ CraftLink:RegisterProfession("First Aid", {
         [251977] = { 1416, 17.2, 61.0 },
         [257007] = { 2521, 63.0, 72.4 },
         [257018] = { 2521, 43.0, 46.2 },
-        [266901] = { 2482, 59.6, 49.2 },
+        [266901] = { 2482, 58.8, 41.8 },
     },
     -- <<< gen_origins.lua
-
 })

@@ -104,7 +104,7 @@ CraftLink:RegisterProfession("Mining", {
         [2659] = { 65, 65, 90, 115 },
         [3304] = { 0, 0, 65, 75 },
         [3307] = { 125, 130, 135, 140 },
-        [3308] = { 155, 170, 177, 185 },
+        [3308] = { 0, 170, 177, 185 },
         [3569] = { 165, 165, 165, 165 },
         [10097] = { 175, 175, 175, 175 },
         [10098] = { 0, 230, 230, 230 },
@@ -112,10 +112,7 @@ CraftLink:RegisterProfession("Mining", {
         [16153] = { 250, 250, 250, 250 },
         [22967] = { 0, 310, 315, 320 },
         [1213638] = { 0, 315, 322, 330 },
-        [1230161] = { 0, 20, 22, 25 },
         [1249637] = { 0, 275, 275, 275 },
-        [1262975] = { 0, 140, 142, 145 },
-        [1263071] = { 0, 300, 300, 300 },
         [1306126] = { 0, 300, 307, 315 },
     },
     -- <<< gen_skill_colors.lua
@@ -133,13 +130,13 @@ CraftLink:RegisterProfession("Mining", {
     -- Le SENS des entrées vient de `recipeSource` ; `kind =` ne figure que quand
     -- la nature a été DÉDUITE de la page d'objet, faute de réponse de la page de métier.
     recipeOrigin = {
-        [2658] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 8128, 440, "Pikkle", nil } },
+        [2658] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [2659] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [3304] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [3307] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [3308] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [3569] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
-        [10097] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 8128, 440, "Pikkle", nil } },
+        [10097] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [10098] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [16153] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
         [1230161] = { kind = "trainer", { 3001, 1638, "Brek Stonehoof", "H" }, { 1681, 38, "Brock Stoneseeker", "A" }, { 4598, 1497, "Brom Killian", "H" }, { 1701, 1, "Dank Drizzlecut", "A" }, { 255891, 16591, "Grungle", nil }, { 252388, 16593, "Halavuul Cragwind", nil } },
@@ -154,10 +151,8 @@ CraftLink:RegisterProfession("Mining", {
         [1701] = { 1426, 69.2, 55.4 },
         [3001] = { 1456, 34.4, 57.4 },
         [4598] = { 1458, 55.4, 36.2 },
-        [8128] = { 1446, 51.0, 28.0 },
         [252388] = { 2521, 65.4, 80.4 },
         [255891] = { 2548, 77.6, 51.8 },
     },
     -- <<< gen_origins.lua
-
 })
