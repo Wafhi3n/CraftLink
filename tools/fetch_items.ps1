@@ -74,7 +74,13 @@ foreach ($entry in $todo) {
 
     # curl.exe, PAS curl : sous PowerShell 5.1 `curl` est un ALIAS d'Invoke-WebRequest.
     # -L : l'URL canonique redirige vers item=<id>/<slug>, sans quoi on recupere une page vide.
+    # /!\ Une erreur de curl (delai depasse...) ecrit sur stderr, et sous PowerShell 5.1 avec
+    # $ErrorActionPreference = "Stop" ca TUE le script, meme redirige vers $null : vecu le 2026-10-03,
+    # arret net a la 22e page sur un seul delai depasse. Le garde ci-dessous compte deja ce cas comme
+    # un refus ; il faut seulement le laisser y arriver.
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
     & curl.exe -sSL -A "Mozilla/5.0" $url -o $tmp --max-time 60 2>$null
+    $ErrorActionPreference = $prevEap
 
     # On n'ECRASE le cache que si la page ressemble a une vraie page d'objet. Sans ce garde, une
     # reponse d'erreur ou tronquee remplacerait une bonne page, et on perdrait la reference au
