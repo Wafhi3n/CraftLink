@@ -145,8 +145,15 @@ end
 -- données de l'ÉMETTEUR et voyage dans le message : le récepteur n'a pas à avoir les mêmes données.
 -- Un client d'avant REV 2 lit encore la partie identifiants : le suffixe colle au dernier fragment,
 -- qui devient illisible et tombe (DecodeKnownIDs ignore un fragment qui n'est pas du base 36).
+--
+-- ⚠️ UN REGISTRE QUI TIENT EN UN MESSAGE PART EN UN MESSAGE, À L'ANCIENNE FORME, sans palier. Un client
+-- d'avant REV 2 REMPLACE le registre à chaque message reçu : découper un registre qui tenait lui ferait
+-- garder le dernier palier seul, là où il voyait tout. Le découpage ne commence qu'au-delà, où l'ancienne
+-- forme arrivait de toute façon coupée. Un récepteur à jour lit l'ancienne forme comme un registre
+-- ENTIER, qui remplace ses paliers.
 
-local RI_CAP    = 200   -- octets d'un message RI : sous 255, avec la place d'une enveloppe de relais
+local LEGACY_MAX = 250  -- au plus : un registre entier en UN message (mesuré : coupé au-delà de 255)
+local RI_CAP    = 200   -- octets d'un morceau de palier : sous 255, avec la place d'une enveloppe de relais
 local MAX_PARTS = 32    -- morceaux d'un palier, au plus (le pire palier mesuré en fait 5)
 local TAG_ROOM  = #"|4.32/32|"
 local TIER_TOP  = { 75, 150, 225 }   -- niveau d'apprentissage max des paliers 1 à 3 ; au-delà, 4
@@ -198,11 +205,17 @@ local function idsByTier(self, prof, knownSet)
 end
 
 -- Messages RI d'un métier, PAR PALIER : { { tier = t, msgs = { … } }, … } triés par palier, ou nil.
--- `knownSet` : par défaut MON registre ; `cap` : octets max d'un message (RI_CAP par défaut — un
--- relayeur passe moins, pour son enveloppe).
+-- Un registre qui tient en un message rend { { tier = "entier", msgs = { "RI|prof|ids" } } }.
+-- `knownSet` : par défaut MON registre ; `cap` : octets max d'un message (LEGACY_MAX pour le registre
+-- entier, RI_CAP pour un morceau de palier — un relayeur passe moins, pour son enveloppe).
 function lib:BuildRITiers(prof, knownSet, cap)
     if not prof then return nil end
-    local byTier = idsByTier(self, prof, knownSet or (self.myKnown and self.myKnown[prof]))
+    knownSet = knownSet or (self.myKnown and self.myKnown[prof])
+    local whole = self:EncodeKnownIDs(knownSet)
+    if not whole then return nil end
+    local single = "RI|" .. prof .. "|" .. whole
+    if #single <= (cap or LEGACY_MAX) then return { { tier = "entier", msgs = { single } } } end
+    local byTier = idsByTier(self, prof, knownSet)
     local tiers = {}
     for t in pairs(byTier) do tiers[#tiers + 1] = t end
     if #tiers == 0 then return nil end
@@ -232,8 +245,8 @@ function lib:BuildRIMessages(prof, knownSet, cap)
     return (#out > 0) and out or nil
 end
 
--- Forme d'avant REV 2, en UN message : coupée par le serveur au-delà de 255 octets. Gardée pour
--- les hôtes qui ne seraient pas passés à BuildRITiers ; Crafting Order ne l'émet plus.
+-- Forme d'avant REV 2, en UN message, SANS limite : coupée par le serveur au-delà de 255 octets.
+-- BuildRITiers la rend d'elle-même quand le registre tient ; gardée pour les hôtes qui n'y sont pas passés.
 function lib:BuildRI(prof)
     if not prof then return nil end
     local payload = self:EncodeKnownIDs(self.myKnown and self.myKnown[prof])
