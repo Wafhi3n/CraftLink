@@ -92,7 +92,8 @@ local function learnedState(c, sid)
 end
 
 -- La fenêtre est-elle CHARGÉE ? Vrai dès qu'une recette de la liste est prouvée apprise. Même garde
--- que le retrait des recettes (CraftLink_Recipes, RECIPES_REV 7) : une liste dont les infos ne sont
+-- que le retrait des recettes prévu par la branche fix/connues-perimees (RECIPES_REV 7, pas encore
+-- fusionnée : CraftLink_Recipes reste « union, jamais retrait ») : une liste dont les infos ne sont
 -- pas encore arrivées ne prouve pas « non appris ». Ne parcourt la liste que s'il y a à retirer.
 local function windowProven(c, list)
     for _, id in ipairs(list) do

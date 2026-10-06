@@ -25,7 +25,7 @@ if not lib then return end
 -- Anti-clobber (cf. CraftLink_Transport) : fichier compagnon qui re-patche la lib HORS du gate de
 -- version LibStub:NewLibrary → une copie plus ANCIENNE chargée après nous écraserait ce codec.
 -- On refuse de réécraser une révision >= la nôtre. BUMP à chaque évolution du format + resync hôtes.
-local REGISTRY_IDS_REV = 2   -- 2 : fil RI PAR PALIER du jeu, découpé sous 255 octets (cf. plus bas)
+local REGISTRY_IDS_REV = 3   -- 3 : ParseRI jette le dernier identifiant d'un message coupé ; 2 : fil RI PAR PALIER du jeu, découpé sous 255 octets (cf. plus bas)
 if (lib._registryIdsRev or 0) >= REGISTRY_IDS_REV then return end
 lib._registryIdsRev = REGISTRY_IDS_REV
 
@@ -257,10 +257,24 @@ end
 -- Parse un message RI → prof, payload, palier, k, n, masque ; ou nil. Ne stocke rien (l'hôte gère
 -- le roster). Forme d'avant REV 2 (sans suffixe) : palier nil, un registre ENTIER. Un palier en un
 -- seul message : k et n nil.
-function lib:ParseRI(message)
+--
+-- `cut` (REV 3) : l'appelant sait que le message a été COUPÉ par le serveur (un relais : c'est
+-- l'enveloppe entière qui fait 255 octets). Sinon, la forme d'avant REV 2 de 255 octets ou plus est
+-- tenue pour coupée : nos émetteurs ne la font jamais au-delà de LEGACY_MAX, seul un client d'avant
+-- la v1.44.2 l'envoie sans limite. Coupé, son dernier identifiant est presque toujours FAUX (« 3k »
+-- arrivé « 3 ») : on le jette. En perdre un vaut mieux qu'en inventer un. (Revue protocole v1.44.2.)
+local CUT_AT = 255
+
+function lib:ParseRI(message, cut)
     local prof, payload, tail = (message or ""):match("^RI|([^|]*)|([^|]*)(.*)$")
     if not (prof and prof ~= "" and payload ~= "") then return nil end
-    if tail == "" then return prof, payload end
+    if tail == "" then
+        if cut or #message >= CUT_AT then
+            payload = payload:match("^(.*)%" .. SEP)
+            if not payload or payload == "" then return nil end
+        end
+        return prof, payload
+    end
     local tag, mask = tail:match("^|([%d%./]+)|([0-4]*)$")
     if not tag then return nil end
     local t, k, n = tag:match("^([0-4])%.(%d+)/(%d+)$")
