@@ -1,8 +1,9 @@
 -- CraftLink-1.0 — Fanout : la portée « global » quand il n'y a PAS de canal.
 --
--- Pourquoi : sur WoW: Forever, un canal custom est MORCELÉ en salles par une clé inconnue (prouvé le
--- 2026-09-27 : deux joueurs côte à côte, même camp, même couche, ne s'entendaient pas dans CraftLinkNet ;
--- leurs whispers, eux, passaient). Le produit coupe donc le canal (SetAutoJoin(false)) et désigne ses
+-- Pourquoi : sur WoW: Forever, un canal custom est MORCELÉ en salles, une par royaume sous le méga-serveur
+-- (prouvé le 2026-09-27 : deux joueurs côte à côte, même camp, même couche, ne s'entendaient pas dans
+-- CraftLinkNet ; leurs whispers, eux, passaient. Clé mesurée le 2026-10-07 : le royaume, attribué au
+-- COMPTE, lisible par GetRealmID()). Le produit coupe donc le canal (SetAutoJoin(false)) et désigne ses
 -- pairs (SetPeerSource) : « à tous » devient un whisper par pair en ligne. Aucun appelant ne change —
 -- une douzaine d'appels émettent « global », les rerouter un par un en aurait oublié un.
 --
@@ -19,7 +20,7 @@ local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
 -- Anti-clobber, même règle que Transport : BUMP à chaque évolution, et resync de TOUS les hôtes.
-local FANOUT_REV = 3   -- 3 : salle de découverte ; 2 : tout refus du jeu est tracé (InvalidChatType)
+local FANOUT_REV = 4   -- 4 : _FixSlot1 (rendre le /1) ; 3 : salle de découverte ; 2 : tout refus du jeu est tracé
 if (lib._fanoutRev or 0) >= FANOUT_REV then return end
 lib._fanoutRev = FANOUT_REV
 
@@ -208,6 +209,33 @@ end
 -- La salle est-elle rejointe (réseau sans canal, découverte active) ?
 function lib:RoomJoined()
     return self._autoJoin == false and self._discovery == true and self._channelJoined == true
+end
+
+-- Notre canal tient le /1 : on l'échange avec le premier canal du jeu qui suit, sinon taper /1 écrirait
+-- dans un canal caché. Relevé du 2026-10-07 : un perso neuf n'avait aucun canal du jeu au bout de 10 s,
+-- la salle a pris le /1, et le jeu le lui redonnait à chaque connexion (General en /2). Mesuré le même
+-- jour en /run : SwapChatChannelsByChannelIndex(1, 2) met General en 1 et CraftLinkNet en 2. Appelé à
+-- l'arrivée et par le chien de garde ; un échange qui échoue n'est pas retenté de la session (trace).
+function lib:_FixSlot1()
+    if self._channelIndex ~= 1 or self._slot1Failed then return end
+    local swap = C_ChatInfo and C_ChatInfo.SwapChatChannelsByChannelIndex
+    if not (swap and GetChannelName) then return end
+    local mine = self._channelName or CHANNEL_NAME
+    for i = 2, 20 do
+        local _, other = GetChannelName(i)
+        if other and other ~= "" and other ~= mine then
+            local ok = pcall(swap, 1, i)
+            local idx = GetChannelName(mine) or 0
+            if ok and idx > 1 then
+                self._channelIndex = idx
+                trace("net", "canal déplacé du /1 au /" .. idx .. " : le /1 rendu à " .. other)
+            else
+                self._slot1Failed = true
+                trace("net", "échange du /1 refusé ou sans effet (" .. tostring(ok) .. ", idx=" .. tostring(idx) .. ")")
+            end
+            return
+        end
+    end
 end
 
 -- fn() : appelé à chaque arrivée dans la salle (rejoint, ou ré-acquis par le chien de garde).
