@@ -20,7 +20,7 @@ local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 if not lib then return end
 
 -- Anti-clobber, même règle que Transport : BUMP à chaque évolution, et resync de TOUS les hôtes.
-local FANOUT_REV = 4   -- 4 : RoomWaitingSlot1 ; 3 : salle de découverte ; 2 : tout refus du jeu est tracé
+local FANOUT_REV = 4   -- 4 : _FixSlot1 (rendre le /1) ; 3 : salle de découverte ; 2 : tout refus du jeu est tracé
 if (lib._fanoutRev or 0) >= FANOUT_REV then return end
 lib._fanoutRev = FANOUT_REV
 
@@ -211,11 +211,31 @@ function lib:RoomJoined()
     return self._autoJoin == false and self._discovery == true and self._channelJoined == true
 end
 
--- La salle attend-elle qu'un canal du jeu prenne le /1 (personnage neuf dans sa vallée de départ) ?
--- Elle n'y entre jamais avant : taper /1 écrirait dans un canal caché (JoinNetwork, TRANSPORT_REV 18).
-function lib:RoomWaitingSlot1()
-    return self._autoJoin == false and self._discovery == true and not self._channelJoined
-        and self._slot1Wait == true
+-- Notre canal tient le /1 : on l'échange avec le premier canal du jeu qui suit, sinon taper /1 écrirait
+-- dans un canal caché. Relevé du 2026-10-07 : un perso neuf n'avait aucun canal du jeu au bout de 10 s,
+-- la salle a pris le /1, et le jeu le lui redonnait à chaque connexion (General en /2). Mesuré le même
+-- jour en /run : SwapChatChannelsByChannelIndex(1, 2) met General en 1 et CraftLinkNet en 2. Appelé à
+-- l'arrivée et par le chien de garde ; un échange qui échoue n'est pas retenté de la session (trace).
+function lib:_FixSlot1()
+    if self._channelIndex ~= 1 or self._slot1Failed then return end
+    local swap = C_ChatInfo and C_ChatInfo.SwapChatChannelsByChannelIndex
+    if not (swap and GetChannelName) then return end
+    local mine = self._channelName or CHANNEL_NAME
+    for i = 2, 20 do
+        local _, other = GetChannelName(i)
+        if other and other ~= "" and other ~= mine then
+            local ok = pcall(swap, 1, i)
+            local idx = GetChannelName(mine) or 0
+            if ok and idx > 1 then
+                self._channelIndex = idx
+                trace("net", "canal déplacé du /1 au /" .. idx .. " : le /1 rendu à " .. other)
+            else
+                self._slot1Failed = true
+                trace("net", "échange du /1 refusé ou sans effet (" .. tostring(ok) .. ", idx=" .. tostring(idx) .. ")")
+            end
+            return
+        end
+    end
 end
 
 -- fn() : appelé à chaque arrivée dans la salle (rejoint, ou ré-acquis par le chien de garde).
