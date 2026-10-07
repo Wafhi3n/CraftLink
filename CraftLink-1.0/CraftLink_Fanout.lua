@@ -46,6 +46,8 @@ lib._lastWhisper = lib._lastWhisper or {}   -- [cible] = instant du dernier whis
 
 local function now() return (GetTime and GetTime()) or 0 end
 local function trace(cat, msg) if lib._trace then pcall(lib._trace, cat, msg) end end
+-- Valeur SECRÈTE sous le verrou du chat (CraftLink_Sender, chargé avant nous) ; sans lui, rien n'est secret.
+local function unreadable(...) return lib._Unreadable ~= nil and lib._Unreadable(...) end
 
 -- fn() rend { [nom] = true } : les pairs que le produit sait EN LIGNE avec l'addon.
 function lib:SetPeerSource(fn) self._peerSource = fn end
@@ -216,6 +218,9 @@ end
 -- la salle a pris le /1, et le jeu le lui redonnait à chaque connexion (General en /2). Mesuré le même
 -- jour en /run : SwapChatChannelsByChannelIndex(1, 2) met General en 1 et CraftLinkNet en 2. Appelé à
 -- l'arrivée et par le chien de garde ; un échange qui échoue n'est pas retenté de la session (trace).
+-- Sous le verrou du chat (combat de boss), un nom de canal peut être SECRET : le comparer lèverait toutes
+-- les 8 s depuis le chien de garde. On ne touche alors à rien, il repassera après (revue du 2026-10-07).
+-- Les couleurs des canaux ne sont pas échangées (le panneau de Blizzard le fait, pas l'API) : cosmétique.
 function lib:_FixSlot1()
     if self._channelIndex ~= 1 or self._slot1Failed then return end
     local swap = C_ChatInfo and C_ChatInfo.SwapChatChannelsByChannelIndex
@@ -223,9 +228,12 @@ function lib:_FixSlot1()
     local mine = self._channelName or CHANNEL_NAME
     for i = 2, 20 do
         local _, other = GetChannelName(i)
+        if unreadable(other) then return end
         if other and other ~= "" and other ~= mine then
             local ok = pcall(swap, 1, i)
-            local idx = GetChannelName(mine) or 0
+            local idx = GetChannelName(mine)
+            if unreadable(idx) then return end
+            idx = tonumber(idx) or 0
             if ok and idx > 1 then
                 self._channelIndex = idx
                 trace("net", "canal déplacé du /1 au /" .. idx .. " : le /1 rendu à " .. other)
