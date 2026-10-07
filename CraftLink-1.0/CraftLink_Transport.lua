@@ -27,7 +27,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 17   -- 17 : valeurs SECRÈTES du chat écartées ; pas de balise texte sans canal ; API non dépréciées
+local TRANSPORT_REV = 18   -- 18 : la salle ne prend jamais le /1 ; 17 : valeurs SECRÈTES du chat écartées
                            -- 16 : salle de découverte — canal rejoint pour se présenter, « global » reste en whisper
                            -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
                            -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
@@ -166,7 +166,10 @@ local unreadable     = lib._Unreadable
 -- ------------------------------------------------------------------
 -- Anti-slot-/1 : les canaux par défaut (General/Trade…) ne sont joints qu'APRÈS l'entrée en jeu. Si on
 -- rejoint avant eux, NOTRE canal rafle le n°1 (taper /1 y écrirait → gêne le joueur). On vérifie donc
--- qu'un canal occupe déjà le slot 1 avant de rejoindre.
+-- qu'un canal occupe déjà le slot 1 avant de rejoindre. La SALLE de découverte, elle, attend sans limite
+-- (relevé du 2026-10-07 : un personnage neuf, dans sa vallée de départ, n'avait aucun canal du jeu au
+-- bout de 10 s, et la salle a pris le /1 à deux connexions de suite) : pas de minuterie, le chien de
+-- garde repasse toutes les 8 s et elle entre dès qu'un canal du jeu tient le n°1.
 -- ------------------------------------------------------------------
 local function slot1Taken()
     if not GetChannelName then return true end
@@ -181,12 +184,19 @@ function lib:JoinNetwork(attempt)
     if self._channelJoined then return end
     if self._autoJoin == false and not self._discovery then return end   -- ni canal, ni salle de découverte
     self._joinSince = self._joinSince or (GetTime and GetTime() or 0)
-    if not slot1Taken() and GetTime and (GetTime() - self._joinSince) < 10
-       and C_Timer and C_Timer.After then
-        trace("net", "attente d'un canal par défaut sur le slot 1 (anti-/1)")
-        C_Timer.After(JOIN_RETRY, function() lib:JoinNetwork() end)
-        return
+    if not slot1Taken() then
+        if self._autoJoin == false then                  -- salle : jamais sur le /1, le chien de garde repassera
+            if not self._slot1Wait then trace("net", "salle différée : le /1 est libre, on attend un canal du jeu") end
+            self._slot1Wait = true
+            return
+        end
+        if GetTime and (GetTime() - self._joinSince) < 10 and C_Timer and C_Timer.After then
+            trace("net", "attente d'un canal par défaut sur le slot 1 (anti-/1)")
+            C_Timer.After(JOIN_RETRY, function() lib:JoinNetwork() end)
+            return
+        end
     end
+    self._slot1Wait = nil
     local name = self._channelName or CHANNEL_NAME
     if JoinTemporaryChannel then JoinTemporaryChannel(name) end
     local idx = GetChannelName and GetChannelName(name) or 0
