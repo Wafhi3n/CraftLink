@@ -27,7 +27,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 18   -- 18 : notre canal rend le /1 (_FixSlot1) ; 17 : valeurs SECRÈTES du chat écartées
+local TRANSPORT_REV = 19   -- 19 : canal masqué de TOUTES les fenêtres (ChatFrameUtil.ForEachChatFrame) ; 18 : notre canal rend le /1 (_FixSlot1) ; 17 : valeurs SECRÈTES du chat écartées
                            -- 16 : salle de découverte — canal rejoint pour se présenter, « global » reste en whisper
                            -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
                            -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
@@ -142,13 +142,21 @@ end
 -- (l'event CHAT_MSG_CHANNEL arrive au handler indépendamment de l'affichage). Appelé à chaque acquisition.
 -- La méthode du cadre d'abord : `ChatFrame_RemoveChannel` n'est qu'un alias posé par
 -- Blizzard_DeprecatedChatInfo, que le réglage `loadDeprecationFallbacks` peut ne pas charger.
+-- Même raison pour le parcours : `NUM_CHAT_WINDOWS` est un alias du même module, et la boucle sur
+-- `ChatFrame1..10` ratait les fenêtres de chuchotement temporaires ; `ChatFrameUtil.ForEachChatFrame`
+-- parcourt `CHAT_FRAMES`, temporaires comprises. L'ancienne boucle reste pour un client sans lui.
 local function hideChannelFromFrames()
     local name = lib._channelName or CHANNEL_NAME
-    for i = 1, (NUM_CHAT_WINDOWS or 10) do
-        local cf = _G["ChatFrame" .. i]
+    local function hide(cf)
         local remove = cf and (cf.RemoveChannel or ChatFrame_RemoveChannel)
         if remove then pcall(remove, cf, name) end
     end
+    local util = _G.ChatFrameUtil
+    if util and util.ForEachChatFrame then
+        pcall(util.ForEachChatFrame, hide)
+        return
+    end
+    for i = 1, (NUM_CHAT_WINDOWS or 10) do hide(_G["ChatFrame" .. i]) end
 end
 
 lib._hideChannel = hideChannelFromFrames   -- la salle de découverte (CraftLink_Fanout) se cache aussi
