@@ -27,7 +27,7 @@ if not lib then return end
 -- fichier principal). Sans ce garde, c'est l'ORDRE DE CHARGEMENT des addons qui arbitre : une copie
 -- embarquée plus ANCIENNE chargée après nous écraserait nos fonctions. On refuse de réécraser une
 -- révision >= la nôtre. BUMP ce numéro à chaque évolution du transport (et resync TOUS les hôtes).
-local TRANSPORT_REV = 17   -- 17 : valeurs SECRÈTES du chat écartées ; pas de balise texte sans canal ; API non dépréciées
+local TRANSPORT_REV = 18   -- 18 : notre canal rend le /1 (_FixSlot1) ; 17 : valeurs SECRÈTES du chat écartées
                            -- 16 : salle de découverte — canal rejoint pour se présenter, « global » reste en whisper
                            -- 14 : « moi » = nom COMPLET (Prénom Nom sur Forever) — l'écho du canal était pris pour un autre
                            -- 13 : ChannelDelivers() — on CONSTATE que l'AddonMessage CHANNEL arrive
@@ -166,7 +166,9 @@ local unreadable     = lib._Unreadable
 -- ------------------------------------------------------------------
 -- Anti-slot-/1 : les canaux par défaut (General/Trade…) ne sont joints qu'APRÈS l'entrée en jeu. Si on
 -- rejoint avant eux, NOTRE canal rafle le n°1 (taper /1 y écrirait → gêne le joueur). On vérifie donc
--- qu'un canal occupe déjà le slot 1 avant de rejoindre.
+-- qu'un canal occupe déjà le slot 1 avant de rejoindre. Si on l'a quand même (perso neuf : aucun canal du
+-- jeu au bout de 10 s ; le jeu garde ensuite ce n°1 d'une session à l'autre), _FixSlot1 (CraftLink_Fanout)
+-- le rend au premier canal du jeu.
 -- ------------------------------------------------------------------
 local function slot1Taken()
     if not GetChannelName then return true end
@@ -193,6 +195,7 @@ function lib:JoinNetwork(attempt)
     if idx and idx > 0 then
         self._channelIndex  = idx
         self._channelJoined = true
+        if self._FixSlot1 then self:_FixSlot1() end
         if self._autoJoin == false then lib:_RoomReady() else lib:_FireReady() end   -- salle : pas « réseau prêt »
     elseif attempt < 15 and C_Timer and C_Timer.After then
         trace("net", "join tentative " .. attempt .. " — index pas encore résolu")
@@ -221,6 +224,7 @@ function lib:_Watchdog()
                 if self._autoJoin == false then lib:_RoomReady() else lib:_FireReady() end
             end
         end
+        if self._FixSlot1 then self:_FixSlot1() end   -- un canal du jeu arrivé depuis : on lui rend le /1
     else
         if self._channelJoined then trace("net", "watchdog : canal PERDU → rejoin") end
         self._channelJoined = false
