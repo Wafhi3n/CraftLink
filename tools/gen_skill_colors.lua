@@ -165,8 +165,8 @@ end
 print(string.format("Terminé (%s) : %d skillColors (%d recettes sans seuils -> heuristique runtime).",
     flavor, total, totalMissing))
 
--- Les conflits ne s'impriment pas un par un (des centaines quand le client a changé des seuils depuis
--- la page) : ils vont dans le cache, à côté des CSV, pour être vérifiés en jeu contre la couleur LIVE.
+-- Corrections et conflits ne s'impriment pas un par un (des dizaines quand le client a changé des
+-- seuils depuis la page) : ils vont dans le cache, à côté des CSV, pour relecture et vérif en jeu.
 local s = clientData and Client.summary(clientStat, clientData.build)
 if s then
     print(s)
@@ -174,12 +174,14 @@ if s then
         local path = [[tools\db2\conflits_couleurs_]] .. flavor .. ".txt"
         local f = io.open(path, "wb")
         if f then
-            f:write("# spellID\tWowhead {orange, jaune, vert, gris}\tclient calé sur learnedAt {orange, jaune, vert, gris}\n")
+            f:write("# nature\tspellID\tWowhead {orange, jaune, vert, gris}\tclient calé sur learnedAt {orange, jaune, vert, gris}\n")
+            f:write("# corrige = le client remplace la ligne ; conflit = niveau inconnu, Wowhead gardé\n")
             for _, c in ipairs(clientStat.conflicts) do
-                f:write(string.format("%d\t{ %s }\t{ %s }\n", c[2], table.concat(c[3], ", "), table.concat(c[4], ", ")))
+                f:write(string.format("%s\t%d\t{ %s }\t{ %s }\n", c[5], c[2], table.concat(c[3], ", "),
+                    table.concat(c[4], ", ")))
             end
             f:close()
-            print(string.format("  %d conflit(s) gardés côté Wowhead, listés dans %s", #clientStat.conflicts, path))
+            print(string.format("  %d ligne(s) corrigée(s) ou en conflit, listées dans %s", #clientStat.conflicts, path))
         end
     end
 end

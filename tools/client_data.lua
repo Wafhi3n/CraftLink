@@ -8,7 +8,8 @@
 --   - objet produit : 2049 recettes renseignées des deux côtés, 2049 identiques ; 253 trous comblables ;
 --   - réactifs : 0 différence ;
 --   - seuils jaune/gris (TrivialSkillLineRankLow/High) : ce sont ceux dont Wowhead tire ses couleurs
---     (cf. wantedColors) ; ils créent les lignes que la page n'a pas, ils ne réécrivent jamais les autres.
+--     (cf. wantedColors) ; ils créent les lignes que la page n'a pas, et CORRIGENT celles qui les
+--     contredisent (cf. fillColors : vu en jeu le 2026-11-07, la fenêtre du métier suit le client).
 --
 -- CE QUE CES TABLES NE DONNENT JAMAIS, et que ce module refuse donc d'écrire :
 --   - `recipes` : SkillLineAbility garde des lignes MORTES (les six potions de soin parties de l'Alchimie
@@ -21,6 +22,8 @@
 --   comble   : Wowhead se tait, le client parle      -> on écrit la valeur du client
 --   confirme : les deux disent la même chose          -> rien de neuf
 --   conflit  : les deux se contredisent               -> on garde Wowhead, et le conflit s'imprime
+-- SEULE EXCEPTION, les couleurs d'une recette au niveau d'apprentissage connu :
+--   corrige  : la ligne de Wowhead contredit le client -> le client calé sur ce niveau la remplace
 
 local M = {}
 
@@ -181,13 +184,14 @@ end
 -- Comblement
 -- ------------------------------------------------------------------
 
--- stat = M.newStat() ; stat[champ] = { comble, confirme, conflit } ; stat.conflicts = { {champ, sid, wowhead, client} }
+-- stat = M.newStat() ; stat[champ] = { comble, confirme, conflit, corrige } ;
+-- stat.conflicts = { {champ, sid, wowhead, client, nature} }, nature = "conflit" (gardé) | "corrige"
 function M.newStat()
     return { conflicts = {} }
 end
 
 local function bump(stat, field, kind)
-    stat[field] = stat[field] or { comble = 0, confirme = 0, conflit = 0 }
+    stat[field] = stat[field] or { comble = 0, confirme = 0, conflit = 0, corrige = 0 }
     stat[field][kind] = stat[field][kind] + 1
 end
 
@@ -213,7 +217,7 @@ local function fillField(e, field, v, stat, sid, same, copy)
         bump(stat, field, "confirme")
     else
         bump(stat, field, "conflit")
-        stat.conflicts[#stat.conflicts + 1] = { field, sid, e[field], v }
+        stat.conflicts[#stat.conflicts + 1] = { field, sid, e[field], v, "conflit" }
     end
 end
 
@@ -242,9 +246,11 @@ end
 
 -- Une ligne de Wowhead face au client : "confirme" ou "conflit". Un ZÉRO de Wowhead n'est PAS un trou :
 -- il dit qu'une couleur n'existe pas pour cette recette (le calage sur L l'a écrasée), et COC le lit
--- déjà juste au-dessus du niveau requis. On ne le compare donc pas, et on ne réécrit jamais la ligne.
-local function judgeColors(c, want)
-    for k = 2, 4 do
+-- déjà juste au-dessus du niveau requis. On ne le compare donc pas. L'ORANGE ne se juge que si le
+-- niveau d'apprentissage est connu (`hasL`) : la fenêtre « à apprendre » de COC exige rang >= orange,
+-- un orange au-dessus du niveau du jeu y cache la recette (2664 : apprise à 65, proposée à 90).
+local function judgeColors(c, want, hasL)
+    for k = hasL and 1 or 2, 4 do
         if c[k] ~= 0 and c[k] ~= want[k] then return "conflit" end
     end
     return "confirme"
@@ -252,23 +258,29 @@ end
 
 -- colors = { [spellID] = { o, j, v, g } } (parseColors de gen_skill_colors) ; recipes = set des recettes
 -- du fichier ; learnedAt = { [spellID] = niveau } du même fichier (relevé en jeu compris).
--- Seule une recette SANS ligne Wowhead en reçoit une ; les autres sont jugées, jamais modifiées.
--- Un conflit vient le plus souvent d'un niveau corrigé en jeu, que Wowhead n'a pas : son calage
--- est fait sur SON niveau. Il se liste pour une vérification en jeu, il ne se tranche pas ici.
+-- Une recette SANS ligne Wowhead en reçoit une. Une ligne Wowhead qui CONTREDIT le client est
+-- remplacée par le client calé sur le niveau, si ce niveau est connu (sinon le conflit reste listé).
+-- POURQUOI le client gagne ici : la ligne de Wowhead, ce sont les MÊMES seuils calés sur SON niveau,
+-- et Forever enseigne beaucoup de recettes plus bas (souvent de 25) ; ses seuils datent aussi du
+-- 2026-10-03. Vu en jeu le 2026-11-07, Forge à 94 : Silver Rod (7818) GRIS, comme le dit le client
+-- (gris 85), là où la ligne Wowhead (gris 100) faisait croire à COC qu'il rapportait encore.
 function M.fillColors(colors, recipes, data, learnedAt, stat)
     if not (data and data.trivial) then return end
     for sid in pairs(recipes) do
         local t = data.trivial[sid]
         if t and t[2] > 0 then
-            local c = colors[sid]
-            local want = wantedColors(t, (learnedAt and learnedAt[sid]) or 0)
+            local c, L = colors[sid], learnedAt and learnedAt[sid]
+            local want = wantedColors(t, L or 0)
             if not c then
                 colors[sid] = want; bump(stat, "skillColors", "comble")
             else
-                local kind = judgeColors(c, want)
+                local kind = judgeColors(c, want, L ~= nil)
+                if kind == "conflit" and L then
+                    kind = "corrige"; colors[sid] = want
+                end
                 bump(stat, "skillColors", kind)
-                if kind == "conflit" then
-                    stat.conflicts[#stat.conflicts + 1] = { "skillColors", sid, c, want }
+                if kind ~= "confirme" then
+                    stat.conflicts[#stat.conflicts + 1] = { "skillColors", sid, c, want, kind }
                 end
             end
         end
@@ -291,7 +303,8 @@ function M.summary(stat, build)
     for _, field in ipairs({ "produces", "reagents", "skillColors" }) do
         local s = stat[field]
         if s then
-            lines[#lines + 1] = string.format("  %-11s comble=%d confirme=%d conflit=%d", field, s.comble, s.confirme, s.conflit)
+            lines[#lines + 1] = string.format("  %-11s comble=%d confirme=%d conflit=%d%s", field, s.comble,
+                s.confirme, s.conflit, s.corrige > 0 and (" corrige=" .. s.corrige) or "")
         end
     end
     if #lines == 0 then return nil end

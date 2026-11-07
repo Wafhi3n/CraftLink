@@ -66,13 +66,20 @@ Vanilla FIGÉ (dataVersion `1792301894`), qui ne doit plus jamais être régén�
   les deux postes). `gen_flavor.lua` y prend l'objet produit et les réactifs que la page n'a pas,
   `gen_skill_colors.lua` une ligne de couleurs aux recettes que la page ne colore pas (jaune = Trivial
   Low, vert = milieu, gris = TrivialHigh, chacun ramené au `learnedAt` : la règle de Wowhead
-  lui-même). **Il comble, il ne remplace jamais** ; un désaccord s'imprime (objets, réactifs) ou se
-  liste dans `tools/db2/conflits_couleurs_<Saveur>.txt` (couleurs). **Jamais `recipes`** (la table
-  garde des recettes mortes et les sorts de rang), **jamais `learnedAt`** (MinSkillLineRank vaut 1
-  chez un formateur). Une ligne de Wowhead à ZÉRO n'est pas un trou : la couleur n'existe pas pour
-  cette recette. Mesure du 2026-11-07 (build 70862) : 253 objets comblés, 2048 confirmés, 0
-  conflit ; réactifs 2484 confirmés ; couleurs 35 lignes neuves, 2401 confirmées, 45 conflits. Puis
-  `refresh_flavor.ps1 -SkipFetch [-Apply]`. Test : `tests/test_client_data.lua`.
+  lui-même). **Il comble, il ne remplace jamais** ; un désaccord s'imprime (objets, réactifs).
+  **Seule exception, les couleurs d'une recette au `learnedAt` connu** : une ligne de Wowhead qui
+  contredit le client (orange compris) est REMPLACÉE par le client calé sur ce niveau, et listée dans
+  `tools/db2/conflits_couleurs_<Saveur>.txt`. Pourquoi : la ligne de Wowhead, ce sont les mêmes
+  seuils calés sur SON niveau, et Forever enseigne beaucoup de recettes plus bas (souvent de 25) ;
+  vu en jeu le 2026-11-07, Forge à 94, Silver Rod (7818) gris comme le dit le client (gris 85), pas
+  Wowhead (gris 100). **Jamais `recipes`** (la table garde des recettes mortes et les sorts de rang),
+  **jamais `learnedAt`** (MinSkillLineRank vaut 1 chez un formateur ; il ne se déduit pas non plus
+  du jaune : 42 des 180 niveaux relevés en jeu l'égalent). Une ligne de Wowhead à ZÉRO n'est pas un
+  trou : la couleur n'existe pas pour cette recette. Mesure du 2026-11-07 (build 70862) : 253 objets
+  comblés, 2048 confirmés, 0 conflit ; réactifs 2484 confirmés ; couleurs 35 lignes neuves, 2349
+  confirmées, 97 corrigées (71 niveaux du jeu plus bas que Wowhead, 24 seuils changés depuis le
+  2026-10-03, 2 oranges sans effet). Puis `refresh_flavor.ps1 -SkipFetch [-Apply]`. Test :
+  `tests/test_client_data.lua`.
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.
