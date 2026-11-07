@@ -126,6 +126,7 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ERREUR: origines des plans echouees." -Fo
 
 Write-Host "`nApplique. Reste a faire, dans l'ordre :" -ForegroundColor Green
 Write-Host "  0. .\tools\fetch_items.ps1 -Phase items|spells|npcs  puis gen_origins.lua (recettes NOUVELLES)"
+Write-Host "     (Wowhead refuse nos requetes depuis le 2026-10-16 : .\tools\fetch_client.ps1 comble avec les tables du client)"
 Write-Host "  1. .\sync-libs.ps1            (pousser la lib dans les addons hotes)"
 Write-Host "  2. ..\scripts\check_lua.ps1   (parite des .toc + Lua 5.1)"
 Write-Host "  3. relire le diff git AVANT de commiter -- ces donnees viennent d'un site tiers."

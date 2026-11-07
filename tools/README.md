@@ -4,10 +4,11 @@ Ce dossier contient la chaîne de génération de la base de métiers statique
 (`CraftLink-1.0/Data/<flavor>/*.lua`). **Rien ici n'est chargé en jeu** — c'est exclu du package
 CurseForge via `.pkgmeta`. Déplacé depuis `TradeScanner/tools/` (2026-07-02).
 
-**Source de données courante : Wowhead uniquement** (une page skill par métier contient tout :
-recettes, produit, réactifs, `learnedat`, objets-plans, tag SoD). MTSL n'est plus qu'une source
-*historique* : c'est d'elle que vient le set Vanilla FIGÉ (dataVersion `1792301894`), qui ne doit
-plus jamais être régénéré.
+**Source de données courante : Wowhead** (une page skill par métier contient tout :
+recettes, produit, réactifs, `learnedat`, objets-plans, tag SoD), **comblée pour Camelot par les
+tables du client de jeu** (`fetch_client.ps1`, depuis le 2026-11-07 : Wowhead refuse nos requêtes
+depuis le 2026-10-16). MTSL n'est plus qu'une source *historique* : c'est d'elle que vient le set
+Vanilla FIGÉ (dataVersion `1792301894`), qui ne doit plus jamais être régénéré.
 
 ## Fichiers
 
@@ -59,6 +60,19 @@ plus jamais être régénéré.
   s'efface à la réinstallation, le fichier curé non. Test : `tests/test_observed.lua`. **À lancer APRÈS `gen_sources.lua`** : il lit `recipeSource` pour
   savoir quelle liste de la page regarder. Quand une page manque du cache, on retombe sur le nom que
   la page de métier donnait — sans faction, donc marqué comme inconnu.
+- `fetch_client.ps1` → `import_client.lua` + `client_data.lua` — les TABLES DU CLIENT de jeu
+  (`SkillLineAbility`, `SpellEffect`, `SpellReagents`), en CSV chez wago.tools, build par build
+  (cache `tools/db2/<build>/`, gitignoré), extraites dans `Curated/client_<Saveur>.lua` (commité, pour
+  les deux postes). `gen_flavor.lua` y prend l'objet produit et les réactifs que la page n'a pas,
+  `gen_skill_colors.lua` une ligne de couleurs aux recettes que la page ne colore pas (jaune = Trivial
+  Low, vert = milieu, gris = TrivialHigh, chacun ramené au `learnedAt` : la règle de Wowhead
+  lui-même). **Il comble, il ne remplace jamais** ; un désaccord s'imprime (objets, réactifs) ou se
+  liste dans `tools/db2/conflits_couleurs_<Saveur>.txt` (couleurs). **Jamais `recipes`** (la table
+  garde des recettes mortes et les sorts de rang), **jamais `learnedAt`** (MinSkillLineRank vaut 1
+  chez un formateur). Une ligne de Wowhead à ZÉRO n'est pas un trou : la couleur n'existe pas pour
+  cette recette. Mesure du 2026-11-07 (build 70862) : 253 objets comblés, 2048 confirmés, 0
+  conflit ; réactifs 2484 confirmés ; couleurs 35 lignes neuves, 2401 confirmées, 45 conflits. Puis
+  `refresh_flavor.ps1 -SkipFetch [-Apply]`. Test : `tests/test_client_data.lua`.
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.

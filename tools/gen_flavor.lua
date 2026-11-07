@@ -70,6 +70,22 @@ end
 -- à part (tests/test_flavor_drift.lua) — cet outil termine par os.exit et ne se charge pas en harnais.
 local Drift = dofile([[tools\flavor_drift.lua]])
 
+-- Les tables du CLIENT de jeu (tools\fetch_client.ps1 -> fichier curé) COMBLENT les trous de la page :
+-- objet produit, réactifs. Jamais `recipes`, jamais `learnedAt` (cf. tools/client_data.lua). Elles
+-- s'appliquent AUSSI au mode -check, sinon chaque objet comblé compterait en perte. Fichier absent :
+-- rien ne change (saveurs sans client suivi).
+local Client = dofile([[tools\client_data.lua]])
+local CURATED_CLIENT = [[tools\Curated\client_%s.lua]]
+local clientData, clientStat = nil, Client.newStat()
+local function printClient()
+    local s = clientData and Client.summary(clientStat, clientData.build)
+    if not s then return end
+    print(s)
+    for _, c in ipairs(clientStat.conflicts) do
+        print(string.format("  CONFLIT %s %d : Wowhead et client se contredisent -> on garde WOWHEAD", c[1], c[2]))
+    end
+end
+
 local FLAVORS = {
     Camelot = {
         domain = "forever", base = "Vanilla",
@@ -279,6 +295,7 @@ local HEADER = [[
 -- Data/%s/%s.lua — set COMPLET de la saveur « %s ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « %s/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -329,6 +346,7 @@ local name = arg and arg[1] or "Camelot"
 local cfg  = FLAVORS[name] or error("saveur inconnue : " .. tostring(name))
 cfg.name = name
 loadObserved(name, cfg.beta)
+clientData = Client.load(string.format(CURATED_CLIENT, name))
 
 -- Drapeaux et sous-ensemble de métiers (pilote), sinon toute la config.
 local flags, only = {}, {}
@@ -374,7 +392,7 @@ local function checkProf(f)
     local html = read(WH_DIR .. cfg.domain .. "_" .. f .. ".html")
     local have, nHave, content = committedRecipes(f)
     local live, nLive = nil, 0
-    if html then live, nLive = parseAll(html) end
+    if html then live, nLive = parseAll(html); Client.fillRecipes(live, clientData, clientStat) end
     if not html then
         print(string.format("  [CACHE ABSENT] %-16s %s%s_%s.html", f, WH_DIR, cfg.domain, f))
         return 0, 0, 1
@@ -418,6 +436,7 @@ local function runCheck()
         end
     end
     print()
+    printClient()
     if broken > 0 or lost > 0 then
         print(string.format("ÉCHEC : %d perte(s) (recettes, ou champs perdus/changés), %d problème(s) de cache. RIEN n'a été écrit.",
             lost, broken))
@@ -476,6 +495,7 @@ for _, p in ipairs(cfg.profs) do
             print(string.format("SKIP %-16s alias introuvables dans le set de base %s", profFile, cfg.base))
         else
             local recipes, n = parseAll(html)
+            Client.fillRecipes(recipes, clientData, clientStat)
             if n == 0 then
                 print(string.format("SKIP %-16s aucune recette trouvée sur la page", profFile))
             else
@@ -509,6 +529,7 @@ else
 end
 
 print(string.format("\nTerminé (%s) : %d recettes sur %d métiers.", name, total, #files))
+printClient()
 -- Ce que la recolte en jeu a apporte, dit en clair. Sans ce bilan on ne saurait pas repondre a la
 -- question « nos observations, Wowhead les connaissait-il deja ? » -- et une recolte dont on ne
 -- mesure pas l'apport finit par sembler inutile alors qu'elle comble, ou l'inverse.

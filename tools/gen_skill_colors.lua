@@ -45,6 +45,13 @@ local FLAVORS = {
                 "Engineering", "FirstAid", "Leatherworking", "Mining", "Tailoring" } },
 }
 
+-- Les tables du CLIENT de jeu (tools\fetch_client.ps1) donnent une ligne aux recettes que Wowhead ne
+-- colore pas : jaune et gris de SkillLineAbility, vert au milieu, calés sur learnedAt comme le fait
+-- Wowhead. Une ligne de Wowhead n'est jamais réécrite (ses zéros sont des couleurs ABSENTES, pas des
+-- trous) ; un désaccord est compté et listé (cf. tools/client_data.lua). Sans fichier curé : rien ne change.
+local Client = dofile([[tools\client_data.lua]])
+local CURATED_CLIENT = [[tools\Curated\client_%s.lua]]
+
 local MARK_OPEN  = "    -- >>> gen_skill_colors.lua"
 local MARK_CLOSE = "    -- <<< gen_skill_colors.lua"
 
@@ -74,6 +81,16 @@ local function parseColors(html)
     for o, j, v, g, id in html:gmatch('"colors":%[(%d+),(%d+),(%d+),(%d+)%][^{}]-"id":(%d+)') do
         o, j, v, g, id = tonumber(o), tonumber(j), tonumber(v), tonumber(g), tonumber(id)
         if g > 0 and j <= v and v <= g then out[id] = { o, j, v, g } end
+    end
+    return out
+end
+
+-- learnedAt du fichier (bloc de PREMIER niveau) : l'orange d'une ligne que le client crée.
+local function learnedAtOf(content)
+    local out = {}
+    local block = content:match("\n    learnedAt%s*=%s*(%b{})")
+    if block then
+        for k, v in block:gmatch("%[(%d+)%]%s*=%s*(%d+)") do out[tonumber(k)] = tonumber(v) end
     end
     return out
 end
@@ -120,6 +137,9 @@ local flavor = arg and arg[1] or "Vanilla"
 local cfg = FLAVORS[flavor] or error("saveur inconnue : " .. tostring(flavor) .. " (Vanilla|TBC|Wrath|SoD)")
 
 local total, totalMissing = 0, 0
+local clientData, clientStat = Client.load(string.format(CURATED_CLIENT, flavor)), Client.newStat()
+local sourceNote = "Wowhead " .. cfg.domain
+if clientData then sourceNote = sourceNote .. " + client " .. clientData.build end
 
 for _, prof in ipairs(cfg.profs) do
     local path     = DATA_ROOT .. flavor .. [[\]] .. prof .. ".lua"
@@ -131,7 +151,9 @@ for _, prof in ipairs(cfg.profs) do
     else
         local recipes, nRec = recipesSet(content)
         if not recipes then print("SKIP " .. prof .. " (bloc recipes introuvable)") else
-            local unit, n = renderUnit(parseColors(html), recipes, "Wowhead " .. cfg.domain)
+            local colors = parseColors(html)
+            Client.fillColors(colors, recipes, clientData, learnedAtOf(content), clientStat)
+            local unit, n = renderUnit(colors, recipes, sourceNote)
             writeFile(path, upsertUnit(content, unit))
             total = total + n; totalMissing = totalMissing + (nRec - n)
             print(string.format("%-16s recettes=%-4d colors=%-4d sans-colors=%d",
@@ -142,3 +164,22 @@ end
 
 print(string.format("Terminé (%s) : %d skillColors (%d recettes sans seuils -> heuristique runtime).",
     flavor, total, totalMissing))
+
+-- Les conflits ne s'impriment pas un par un (des centaines quand le client a changé des seuils depuis
+-- la page) : ils vont dans le cache, à côté des CSV, pour être vérifiés en jeu contre la couleur LIVE.
+local s = clientData and Client.summary(clientStat, clientData.build)
+if s then
+    print(s)
+    if #clientStat.conflicts > 0 then
+        local path = [[tools\db2\conflits_couleurs_]] .. flavor .. ".txt"
+        local f = io.open(path, "wb")
+        if f then
+            f:write("# spellID\tWowhead {orange, jaune, vert, gris}\tclient calé sur learnedAt {orange, jaune, vert, gris}\n")
+            for _, c in ipairs(clientStat.conflicts) do
+                f:write(string.format("%d\t{ %s }\t{ %s }\n", c[2], table.concat(c[3], ", "), table.concat(c[4], ", ")))
+            end
+            f:close()
+            print(string.format("  %d conflit(s) gardés côté Wowhead, listés dans %s", #clientStat.conflicts, path))
+        end
+    end
+end

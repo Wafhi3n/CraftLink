@@ -10,3 +10,7 @@ Thumbs.db
 
 # Cache HTML Wowhead des outils de génération (gros, re-téléchargeable — cf. tools/README.md)
 /tools/wh/
+
+# Cache des tables du client (CSV de wago.tools, plusieurs Mo par build) et rapports de conflits.
+# Ce qui compte en est extrait dans tools/Curated/client_<Saveur>.lua, lui commité.
+/tools/db2/
