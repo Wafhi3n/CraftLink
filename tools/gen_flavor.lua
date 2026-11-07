@@ -70,6 +70,22 @@ end
 -- à part (tests/test_flavor_drift.lua) — cet outil termine par os.exit et ne se charge pas en harnais.
 local Drift = dofile([[tools\flavor_drift.lua]])
 
+-- Les tables du CLIENT de jeu (tools\fetch_client.ps1 -> fichier curé) COMBLENT les trous de la page :
+-- objet produit, réactifs. Jamais `recipes`, jamais `learnedAt` (cf. tools/client_data.lua). Elles
+-- s'appliquent AUSSI au mode -check, sinon chaque objet comblé compterait en perte. Fichier absent :
+-- rien ne change (saveurs sans client suivi).
+local Client = dofile([[tools\client_data.lua]])
+local CURATED_CLIENT = [[tools\Curated\client_%s.lua]]
+local clientData, clientStat = nil, Client.newStat()
+local function printClient()
+    local s = clientData and Client.summary(clientStat, clientData.build)
+    if not s then return end
+    print(s)
+    for _, c in ipairs(clientStat.conflicts) do
+        print(string.format("  CONFLIT %s %d : Wowhead et client se contredisent -> on garde WOWHEAD", c[1], c[2]))
+    end
+end
+
 local FLAVORS = {
     Camelot = {
         domain = "forever", base = "Vanilla",
@@ -79,8 +95,12 @@ local FLAVORS = {
         -- jeu l'emporte donc sur la page. Sur une saveur SORTIE, le rapport s'inverse : le site
         -- est mature, corrige et recoupe par des milliers de joueurs, et c'est un releve isole qui
         -- devient le suspect. Arbitrage du user, 2026-09-23.
-        -- ⚠️ A REPASSER A FALSE quand Forever sort (sortie annoncee le 2026-11-04) : la regle
-        -- change de sens ce jour-la, et rien d'automatique ne s'en apercevra.
+        -- ⚠️ RESTE A TRUE apres la sortie (2026-11-07) : la premisse « site mature » est tombee.
+        -- Wowhead nous refuse depuis le 2026-10-16 (403) : notre cache est fige au 2026-10-03 et ne
+        -- sera jamais corrige. Et ses niveaux sont faux sur le serveur FINAL : Silver Rod (7818)
+        -- connu a 94 en Forge, Wowhead dit 100 ; Forever enseigne souvent 25 points plus bas.
+        -- Les couleurs en dependent : client_data.fillColors cale les seuils du client sur le
+        -- learnedAt EN VIGUEUR ; a false, les 71 corrections de niveau se defont en silence.
         beta   = true,
         -- `skill` + `slug` servent UNIQUEMENT à imprimer les commandes curl (-fetch) : l'outil ne
         -- va jamais sur le réseau lui-même, pour que la génération reste rejouable hors ligne.
@@ -259,14 +279,27 @@ local function collate(recipes, ids)
             obsStat.comble = obsStat.comble + 1
         end
     end
-    table.sort(i2s, function(a, b) return a[1] < b[1] end)
-    return produces, i2s, reag, la
+    -- ⚠️ UN OBJET, UN SORT dans `itemToSpell`. Deux sorts peuvent fabriquer le même objet (7076,
+    -- Essence of Earth : 17560 et 17565). Les deux lignes donnaient une clé en double où seule la
+    -- dernière compte, et l'ordre des égalités de `table.sort` n'est pas stable : le gagnant
+    -- basculait d'une génération à l'autre (217287 : 439134 sur main, 14810 le 2026-10-03). On trie
+    -- aussi sur le sort et on garde le PLUS PETIT -- la recette d'origine, les variantes venant après.
+    table.sort(i2s, function(a, b)
+        if a[1] ~= b[1] then return a[1] < b[1] end
+        return a[2] < b[2]
+    end)
+    local uniq = {}
+    for _, p in ipairs(i2s) do
+        if not (uniq[#uniq] and uniq[#uniq][1] == p[1]) then uniq[#uniq + 1] = p end
+    end
+    return produces, uniq, reag, la
 end
 
 local HEADER = [[
 -- Data/%s/%s.lua — set COMPLET de la saveur « %s ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « %s/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés par les tables du client (tools/Curated/client_*.lua), qui font foi sur les couleurs.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -317,6 +350,7 @@ local name = arg and arg[1] or "Camelot"
 local cfg  = FLAVORS[name] or error("saveur inconnue : " .. tostring(name))
 cfg.name = name
 loadObserved(name, cfg.beta)
+clientData = Client.load(string.format(CURATED_CLIENT, name))
 
 -- Drapeaux et sous-ensemble de métiers (pilote), sinon toute la config.
 local flags, only = {}, {}
@@ -362,7 +396,7 @@ local function checkProf(f)
     local html = read(WH_DIR .. cfg.domain .. "_" .. f .. ".html")
     local have, nHave, content = committedRecipes(f)
     local live, nLive = nil, 0
-    if html then live, nLive = parseAll(html) end
+    if html then live, nLive = parseAll(html); Client.fillRecipes(live, clientData, clientStat) end
     if not html then
         print(string.format("  [CACHE ABSENT] %-16s %s%s_%s.html", f, WH_DIR, cfg.domain, f))
         return 0, 0, 1
@@ -382,7 +416,8 @@ local function checkProf(f)
     local add, del = 0, 0
     for id in pairs(live) do if not have[id] then add = add + 1 end end
     for id in pairs(have) do if not live[id] then del = del + 1 end end
-    local gained, changed = Drift.fieldDrift(live, have, content)
+    -- En bêta, un niveau commité qui vient d'un relevé en jeu n'est pas une perte (cf. flavor_drift).
+    local gained, changed = Drift.fieldDrift(live, have, content, obsBeta and { learnedAt = obsRank } or nil)
     if del > 0 or changed > 0 then
         print(string.format("  [PERTE]        %-16s commitées=%-5d ajouts=%-4d PERTES=%d  champs perdus/changés=%d",
             f, nHave, add, del, changed))
@@ -405,6 +440,7 @@ local function runCheck()
         end
     end
     print()
+    printClient()
     if broken > 0 or lost > 0 then
         print(string.format("ÉCHEC : %d perte(s) (recettes, ou champs perdus/changés), %d problème(s) de cache. RIEN n'a été écrit.",
             lost, broken))
@@ -463,6 +499,7 @@ for _, p in ipairs(cfg.profs) do
             print(string.format("SKIP %-16s alias introuvables dans le set de base %s", profFile, cfg.base))
         else
             local recipes, n = parseAll(html)
+            Client.fillRecipes(recipes, clientData, clientStat)
             if n == 0 then
                 print(string.format("SKIP %-16s aucune recette trouvée sur la page", profFile))
             else
@@ -496,6 +533,7 @@ else
 end
 
 print(string.format("\nTerminé (%s) : %d recettes sur %d métiers.", name, total, #files))
+printClient()
 -- Ce que la recolte en jeu a apporte, dit en clair. Sans ce bilan on ne saurait pas repondre a la
 -- question « nos observations, Wowhead les connaissait-il deja ? » -- et une recolte dont on ne
 -- mesure pas l'apport finit par sembler inutile alors qu'elle comble, ou l'inverse.

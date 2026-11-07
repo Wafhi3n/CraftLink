@@ -9,13 +9,14 @@
 # s'efface a la reinstallation, le fichier cure est commite.
 #
 # Usage (cwd = f:\AddonDevellopement\CraftLink) :
-#   .\tools\import_observed.ps1                          # Camelot, client _classic_beta_
-#   .\tools\import_observed.ps1 -WowRoot "E:\WoW\_classic_beta_"
+#   .\tools\import_observed.ps1                          # Camelot, client _forever_
+#   .\tools\import_observed.ps1 -WowRoot "E:\WoW\_forever_"
 
 param(
     [string] $Flavor  = "Camelot",
     # Meme client que la cible `camelot` de deploy.ps1 (qui pointe sur ...\Interface\AddOns).
-    [string] $WowRoot = "D:\Jeux\World of Warcraft\_classic_beta_"
+    # _forever_ depuis le pre-telechargement du 2026-10-21 ; le dossier _classic_beta_ n'existe plus.
+    [string] $WowRoot = "D:\Jeux\World of Warcraft\_forever_"
 )
 
 $ErrorActionPreference = "Stop"
