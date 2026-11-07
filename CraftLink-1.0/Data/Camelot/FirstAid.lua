@@ -1,6 +1,7 @@
 -- Data/Camelot/FirstAid.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -171,7 +172,7 @@ CraftLink:RegisterProfession("First Aid", {
         [273118] = 1263001,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -188,7 +189,9 @@ CraftLink:RegisterProfession("First Aid", {
         [18629] = { 260, 260, 290, 320 },
         [18630] = { 290, 290, 320, 350 },
         [23787] = { 300, 300, 330, 360 },
+        [30021] = { 0, 300, 330, 360 },
         [470349] = { 0, 315, 327, 340 },
+        [1230117] = { 20, 20, 22, 25 },
         [1244431] = { 0, 55, 75, 95 },
         [1244432] = { 0, 85, 105, 125 },
         [1244433] = { 0, 135, 155, 175 },
@@ -203,6 +206,8 @@ CraftLink:RegisterProfession("First Aid", {
         [1259347] = { 0, 120, 155, 190 },
         [1259348] = { 0, 220, 250, 280 },
         [1259349] = { 0, 280, 310, 340 },
+        [1262996] = { 140, 140, 142, 145 },
+        [1263001] = { 300, 300, 300, 300 },
     },
     -- <<< gen_skill_colors.lua
 

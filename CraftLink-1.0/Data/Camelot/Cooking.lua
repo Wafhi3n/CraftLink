@@ -1,6 +1,7 @@
 -- Data/Camelot/Cooking.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -146,6 +147,8 @@ CraftLink:RegisterProfession("Cooking", {
         [250080] = 1250157,
         [250081] = 1250158,
         [251525] = 1252566,
+        [252683] = 1255241,
+        [263507] = 1270632,
         [263509] = 1270633,
         [263512] = 1270635,
         [267341] = 1294014,
@@ -279,8 +282,10 @@ CraftLink:RegisterProfession("Cooking", {
         [1250157] = 250080,
         [1250158] = 250081,
         [1252566] = 251525,
+        [1255241] = 252683,
         [1262978] = 279957,
         [1263067] = 279982,
+        [1270632] = 263507,
         [1270633] = 263509,
         [1270635] = 263512,
         [1283400] = 279961,
@@ -426,7 +431,7 @@ CraftLink:RegisterProfession("Cooking", {
         [1319313] = { {13890,1}, {3713,1} },
     },
     learnedAt = {
-        [818] = 25,
+        [818] = 20,
         [2538] = 0,
         [2539] = 10,
         [2540] = 0,
@@ -679,7 +684,7 @@ CraftLink:RegisterProfession("Cooking", {
         [286153] = 1319313,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -918,7 +923,7 @@ CraftLink:RegisterProfession("Cooking", {
     -- Le SENS des entrées vient de `recipeSource` ; `kind =` ne figure que quand
     -- la nature a été DÉDUITE de la page d'objet, faute de réponse de la page de métier.
     recipeOrigin = {
-        [818] = { kind = "trainer", { 4552, 1497, "Eunice Burch", nil } },
+        [818] = { kind = "trainer", { 4552, 1497, "Eunice Burch", nil }, { 1430, nil, "Tomas", "A" } },
         [2539] = { kind = "trainer", { 4210, 1657, "Alegorn", "A" }, { 3026, 1638, "Aska Mistrunner", "H" }, { 1355, 1, "Cook Ghilm", "A" }, { 3191, 14, "Cook Torka", "H" }, { 257006, 16593, "Nyalah Brightfire", nil }, { 244512, 616, "Ortak Lomgok", nil } },
         [2541] = { kind = "trainer", { 4210, 1657, "Alegorn", "A" }, { 3026, 1638, "Aska Mistrunner", "H" }, { 1355, 1, "Cook Ghilm", "A" }, { 3191, 14, "Cook Torka", "H" }, { 257006, 16593, "Nyalah Brightfire", nil }, { 244512, 616, "Ortak Lomgok", nil } },
         [2542] = { { 340, 1519, "Kendor Kabonka", "A" } },
@@ -1096,6 +1101,7 @@ CraftLink:RegisterProfession("Cooking", {
         [1149] = { 1434, 31.4, 28.0 },
         [1355] = { 1426, 68.4, 54.4 },
         [1397] = { 1426, 40.2, 42.8 },
+        [1430] = { 1429, 44.3, 66.0 },
         [1465] = { 1432, 35.4, 48.8 },
         [1684] = { 1432, 39.4, 39.2 },
         [2118] = { 1420, 61.0, 52.4 },

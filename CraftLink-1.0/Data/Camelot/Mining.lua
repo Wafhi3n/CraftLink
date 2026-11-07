@@ -1,6 +1,7 @@
 -- Data/Camelot/Mining.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -29,6 +30,7 @@ CraftLink:RegisterProfession("Mining", {
         [11371] = 14891,
         [12359] = 16153,
         [17771] = 22967,
+        [234003] = 1213638,
         [249726] = 1249637,
         [251291] = 1306126,
         [279948] = 1262975,
@@ -48,6 +50,7 @@ CraftLink:RegisterProfession("Mining", {
         [14891] = 11371,
         [16153] = 12359,
         [22967] = 17771,
+        [1213638] = 234003,
         [1230161] = 279960,
         [1249637] = 249726,
         [1262975] = 279948,
@@ -95,7 +98,7 @@ CraftLink:RegisterProfession("Mining", {
         [1306126] = 300,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -112,7 +115,10 @@ CraftLink:RegisterProfession("Mining", {
         [16153] = { 250, 250, 250, 250 },
         [22967] = { 0, 310, 315, 320 },
         [1213638] = { 0, 315, 322, 330 },
+        [1230161] = { 20, 20, 22, 25 },
         [1249637] = { 0, 275, 275, 275 },
+        [1262975] = { 140, 140, 142, 145 },
+        [1263071] = { 300, 300, 300, 300 },
         [1306126] = { 0, 300, 307, 315 },
     },
     -- <<< gen_skill_colors.lua

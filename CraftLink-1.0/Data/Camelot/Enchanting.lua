@@ -1,6 +1,7 @@
 -- Data/Camelot/Enchanting.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -55,15 +56,36 @@ CraftLink:RegisterProfession("Enchanting", {
         [20748] = 25130,
         [20749] = 25129,
         [20750] = 25128,
+        [211848] = 430409,
         [217287] = 14810,
         [217308] = 439156,
         [220606] = 1249128,
         [220792] = 448624,
+        [221028] = 446243,
         [228175] = 1249152,
         [228176] = 1249154,
         [228978] = 463866,
         [228980] = 463869,
         [232611] = 471400,
+        [233990] = 1213593,
+        [233991] = 1213595,
+        [233992] = 1213598,
+        [233993] = 1213600,
+        [233994] = 1213603,
+        [233995] = 1213607,
+        [233996] = 1213610,
+        [234000] = 1213628,
+        [234001] = 1213633,
+        [234002] = 1213635,
+        [234468] = 1216024,
+        [234469] = 1216022,
+        [234474] = 1216020,
+        [234475] = 1216007,
+        [234476] = 1216010,
+        [234477] = 1216005,
+        [234478] = 1216016,
+        [234479] = 1216018,
+        [234480] = 1216014,
         [247786] = 1245320,
         [247789] = 1245321,
         [249144] = 1248461,
@@ -118,12 +140,33 @@ CraftLink:RegisterProfession("Enchanting", {
         [25128] = 20750,
         [25129] = 20749,
         [25130] = 20748,
+        [430409] = 211848,
         [439134] = 217287,
         [439156] = 217308,
+        [446243] = 221028,
         [448624] = 220792,
         [463866] = 228978,
         [463869] = 228980,
         [471400] = 232611,
+        [1213593] = 233990,
+        [1213595] = 233991,
+        [1213598] = 233992,
+        [1213600] = 233993,
+        [1213603] = 233994,
+        [1213607] = 233995,
+        [1213610] = 233996,
+        [1213628] = 234000,
+        [1213633] = 234001,
+        [1213635] = 234002,
+        [1216005] = 234477,
+        [1216007] = 234475,
+        [1216010] = 234476,
+        [1216014] = 234480,
+        [1216016] = 234478,
+        [1216018] = 234479,
+        [1216020] = 234474,
+        [1216022] = 234469,
+        [1216024] = 234468,
         [1230643] = 279976,
         [1245320] = 247786,
         [1245321] = 247789,
@@ -883,7 +926,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [20725] = "Nexus Crystal",
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {

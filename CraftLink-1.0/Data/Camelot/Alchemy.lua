@@ -1,6 +1,7 @@
 -- Data/Camelot/Alchemy.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
+-- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -38,6 +39,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [2457] = 3230,
         [2458] = 2334,
         [2459] = 2335,
+        [2460] = 2365,
         [3382] = 3170,
         [3383] = 3171,
         [3384] = 3172,
@@ -140,7 +142,20 @@ CraftLink:RegisterProfession("Alchemy", {
         [20008] = 24367,
         [21546] = 26277,
         [210708] = 426607,
+        [213372] = 435969,
+        [215162] = 435971,
         [217398] = 439960,
+        [221024] = 446226,
+        [221313] = 446851,
+        [222952] = 448085,
+        [233962] = 1213552,
+        [233964] = 1213546,
+        [233965] = 1213548,
+        [233966] = 1213544,
+        [233967] = 1213559,
+        [233968] = 1213563,
+        [233969] = 1213565,
+        [233977] = 1213571,
         [241650] = 1231583,
         [246948] = 1244421,
         [247239] = 1244645,
@@ -153,6 +168,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [249410] = 1249633,
         [249430] = 1249631,
         [249431] = 1249632,
+        [250326] = 1250775,
         [250327] = 1250776,
         [250328] = 1250777,
         [250329] = 1250778,
@@ -220,6 +236,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [2333] = 3390,
         [2334] = 2458,
         [2335] = 2459,
+        [2365] = 2460,
         [3170] = 3382,
         [3171] = 3383,
         [3172] = 3384,
@@ -324,7 +341,20 @@ CraftLink:RegisterProfession("Alchemy", {
         [25146] = 7068,
         [26277] = 21546,
         [426607] = 210708,
+        [435969] = 213372,
+        [435971] = 215162,
         [439960] = 217398,
+        [446226] = 221024,
+        [446851] = 221313,
+        [448085] = 222952,
+        [1213544] = 233966,
+        [1213546] = 233964,
+        [1213548] = 233965,
+        [1213552] = 233962,
+        [1213559] = 233967,
+        [1213563] = 233968,
+        [1213565] = 233969,
+        [1213571] = 233977,
         [1230564] = 279956,
         [1231583] = 241650,
         [1244421] = 246948,
@@ -338,6 +368,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [1249631] = 249430,
         [1249632] = 249431,
         [1249633] = 249410,
+        [1250775] = 250326,
         [1250776] = 250327,
         [1250777] = 250328,
         [1250778] = 250329,
@@ -911,7 +942,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [274280] = 1293562,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -956,6 +987,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [7841] = { 100, 130, 150, 170 },
         [7845] = { 140, 165, 185, 205 },
         [8240] = { 90, 120, 140, 160 },
+        [11447] = { 0, 190, 210, 230 },
         [11448] = { 205, 220, 240, 260 },
         [11449] = { 185, 205, 225, 245 },
         [11450] = { 195, 215, 235, 255 },
@@ -1005,6 +1037,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [17576] = { 290, 305, 325, 345 },
         [17577] = { 290, 305, 325, 345 },
         [17578] = { 290, 305, 325, 345 },
+        [17579] = { 0, 305, 325, 345 },
         [17580] = { 295, 310, 330, 350 },
         [17632] = { 300, 315, 322, 330 },
         [17634] = { 300, 315, 322, 330 },
@@ -1013,6 +1046,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [17637] = { 300, 315, 322, 330 },
         [17638] = { 300, 315, 322, 330 },
         [21923] = { 190, 210, 230, 250 },
+        [22430] = { 0, 315, 322, 330 },
         [22732] = { 300, 310, 320, 330 },
         [22808] = { 215, 230, 250, 270 },
         [24266] = { 0, 315, 322, 330 },
