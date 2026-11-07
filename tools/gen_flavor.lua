@@ -95,8 +95,12 @@ local FLAVORS = {
         -- jeu l'emporte donc sur la page. Sur une saveur SORTIE, le rapport s'inverse : le site
         -- est mature, corrige et recoupe par des milliers de joueurs, et c'est un releve isole qui
         -- devient le suspect. Arbitrage du user, 2026-09-23.
-        -- ⚠️ A REPASSER A FALSE quand Forever sort (sortie annoncee le 2026-11-04) : la regle
-        -- change de sens ce jour-la, et rien d'automatique ne s'en apercevra.
+        -- ⚠️ RESTE A TRUE apres la sortie (2026-11-07) : la premisse « site mature » est tombee.
+        -- Wowhead nous refuse depuis le 2026-10-16 (403) : notre cache est fige au 2026-10-03 et ne
+        -- sera jamais corrige. Et ses niveaux sont faux sur le serveur FINAL : Silver Rod (7818)
+        -- connu a 94 en Forge, Wowhead dit 100 ; Forever enseigne souvent 25 points plus bas.
+        -- Les couleurs en dependent : client_data.fillColors cale les seuils du client sur le
+        -- learnedAt EN VIGUEUR ; a false, les 71 corrections de niveau se defont en silence.
         beta   = true,
         -- `skill` + `slug` servent UNIQUEMENT à imprimer les commandes curl (-fetch) : l'outil ne
         -- va jamais sur le réseau lui-même, pour que la génération reste rejouable hors ligne.
