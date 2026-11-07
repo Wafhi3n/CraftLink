@@ -1,7 +1,7 @@
 -- Data/Camelot/Alchemy.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
--- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
+-- Trous de Wowhead comblés par les tables du client (tools/Curated/client_*.lua), qui font foi sur les couleurs.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -946,7 +946,7 @@ CraftLink:RegisterProfession("Alchemy", {
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
-        [2329] = { 1, 55, 75, 95 },
+        [2329] = { 15, 55, 75, 95 },
         [2331] = { 25, 65, 85, 105 },
         [2332] = { 40, 70, 90, 110 },
         [2333] = { 140, 165, 185, 205 },

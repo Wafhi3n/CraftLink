@@ -1,7 +1,7 @@
 -- Data/Camelot/Enchanting.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
--- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
+-- Trous de Wowhead comblés par les tables du client (tools/Curated/client_*.lua), qui font foi sur les couleurs.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -1152,7 +1152,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [1248650] = { 275, 320, 340, 360 },
         [1248661] = { 300, 320, 340, 360 },
         [1248665] = { 300, 320, 340, 360 },
-        [1248668] = { 290, 290, 295, 300 },
+        [1248668] = { 290, 295, 297, 300 },
         [1248703] = { 140, 140, 160, 180 },
         [1248739] = { 140, 140, 160, 180 },
         [1248745] = { 140, 140, 160, 180 },
@@ -1184,7 +1184,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [1249154] = { 300, 320, 340, 360 },
         [1263056] = { 140, 140, 142, 145 },
         [1263082] = { 300, 300, 300, 300 },
-        [1294054] = { 0, 0, 0, 295 },
+        [1294054] = { 295, 295, 297, 300 },
         [1306520] = { 300, 310, 317, 325 },
         [1306521] = { 300, 310, 317, 325 },
         [1306522] = { 300, 310, 317, 325 },

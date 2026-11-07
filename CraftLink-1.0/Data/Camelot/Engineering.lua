@@ -1,7 +1,7 @@
 -- Data/Camelot/Engineering.lua — set COMPLET de la saveur « WoW: Forever (Camelot) ».
 -- GÉNÉRÉ par tools/gen_flavor.lua depuis Wowhead (domaine « forever/ »). NE PAS ÉDITER À LA MAIN.
 -- Noms résolus au runtime (GetItemInfo/GetSpellInfo) — multilingue.
--- Trous de Wowhead comblés (jamais remplacés) par les tables du client : tools/Curated/client_*.lua.
+-- Trous de Wowhead comblés par les tables du client (tools/Curated/client_*.lua), qui font foi sur les couleurs.
 --
 -- REMPLACE le set de base (RegisterProfession), il ne l'étend pas : cette saveur RETIRE des
 -- recettes en plus d'en ajouter, ce qu'une couche additive ne sait pas faire. Sélectionné par le
@@ -1419,7 +1419,7 @@ CraftLink:RegisterProfession("Engineering", {
         [12907] = { 235, 255, 265, 275 },
         [12908] = { 0, 260, 270, 280 },
         [15255] = { 200, 200, 220, 240 },
-        [15628] = { 205, 205, 205, 205 },
+        [15628] = { 205, 205, 207, 210 },
         [15633] = { 205, 205, 205, 205 },
         [19567] = { 250, 270, 280, 290 },
         [19788] = { 250, 250, 255, 260 },
