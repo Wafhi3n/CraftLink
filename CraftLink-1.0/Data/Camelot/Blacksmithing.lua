@@ -2413,7 +2413,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [285291] = 1317964,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -2453,7 +2453,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [3323] = { 35, 75, 95, 115 },
         [3324] = { 35, 75, 95, 115 },
         [3325] = { 60, 75, 95, 115 },
-        [3326] = { 50, 50, 62, 75 },
+        [3326] = { 50, 50, 70, 90 },
         [3328] = { 85, 115, 130, 145 },
         [3330] = { 125, 130, 145, 160 },
         [3331] = { 105, 135, 150, 165 },
@@ -3524,6 +3524,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [1301534] = { { 32287, 36, "Archmage Alvareaux", "A" } },
         [1301535] = { { 32287, 36, "Archmage Alvareaux", "A" } },
         [1302598] = { { 95217, nil, "The Quarry's Smith", "A" }, { 96874, nil, "This Is Spinal Axe", "H" } },
+        [1317964] = { kind = "vendor", { 256730, 44, "Stondry Darkhammer", "A" } },
     },
     -- PRIX du plan chez son marchand, en cuivre. Absent = inconnu, JAMAIS zéro.
     recipePrice = {
@@ -3596,7 +3597,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [682] = { 1434, 27.8, 9.6 },
         [765] = { 1435, 7.4, 31.4 },
         [775] = { 1434, 40.2, 8.4 },
-        [957] = { 1453, 64.1, 37.3 },
+        [957] = { 1453, 63.9, 37.2 },
         [979] = { 1434, 48.4, 5.6 },
         [1119] = { 1426, 71.4, 51.4 },
         [1142] = { 1434, 35.4, 30.8 },
@@ -3674,7 +3675,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [10119] = { 1428, 40.6, 52.6 },
         [10197] = { 1452, 29.4, 36.8 },
         [10276] = { 1455, 51.9, 42.3 },
-        [10277] = { 1455, 52.2, 42.2 },
+        [10277] = { 1455, 51.9, 42.2 },
         [10661] = { 1452, 52.8, 55.0 },
         [10801] = { 1422, 36.2, 57.4 },
         [10856] = { 1420, 83.2, 68.2 },
@@ -3719,7 +3720,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [253139] = { 1443, 66.2, 79.4 },
         [253140] = { 1443, 35.6, 92.0 },
         [254151] = { 2521, 63.8, 36.0 },
-        [256730] = { 1433, 10.4, 74.4 },
+        [256730] = { 1433, 10.4, 74.6 },
         [259250] = { 2548, 64.4, 82.0 },
         [259860] = { 2548, 64.2, 84.0 },
         [264078] = { 1412, 34.4, 22.8 },

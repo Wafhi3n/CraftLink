@@ -83,6 +83,39 @@ function M.records(text)
 end
 
 -- ------------------------------------------------------------------
+-- Hotfixes du serveur, par-dessus le CSV du build
+-- ------------------------------------------------------------------
+-- Le CSV de wago.tools est la table telle que le BUILD la livre. Blizzard la corrige ensuite sans
+-- nouveau build : le serveur pousse des hotfixes, que le jeu applique et que le CSV ignore. Mesuré le
+-- 2026-11-11 (build 70888, hotfix de 04:17) : Coarse Grinding Stone (3326) grise à 90 en jeu, 75 dans
+-- le CSV -- COC la croyait grise 15 points trop tôt. fetch_client.ps1 relève les hotfixes de chaque
+-- table dans <Table>.hotfixes.csv : mêmes colonnes que le CSV, plus HotfixStatus, la DERNIÈRE poussée
+-- par enregistrement. Statut 1 = l'enregistrement tel que le serveur le donne (remplace ou ajoute) ;
+-- 2 = retiré ; tout autre statut (3 = hotfix invalidé) ne change rien.
+-- records, hotfixes : listes d'enregistrements (M.records). Rend la liste corrigée et un bilan.
+function M.applyHotfixes(records, hotfixes)
+    local byId, order, stat = {}, {}, { replaced = 0, added = 0, removed = 0 }
+    for _, r in ipairs(records) do
+        if r.ID and not byId[r.ID] then order[#order + 1] = r.ID end
+        byId[r.ID or ""] = r
+    end
+    for _, h in ipairs(hotfixes or {}) do
+        local id, st = h.ID, h.HotfixStatus
+        if id and st == "1" then
+            local rec = {}
+            for k, v in pairs(h) do if k ~= "HotfixStatus" then rec[k] = v end end
+            if byId[id] then stat.replaced = stat.replaced + 1 else stat.added = stat.added + 1; order[#order + 1] = id end
+            byId[id] = rec
+        elseif id and st == "2" and byId[id] then
+            byId[id] = nil; stat.removed = stat.removed + 1
+        end
+    end
+    local out = {}
+    for _, id in ipairs(order) do if byId[id] then out[#out + 1] = byId[id] end end
+    return out, stat
+end
+
+-- ------------------------------------------------------------------
 -- Extraction : trois tables du client -> { produces, reagents, trivial } par spellID
 -- ------------------------------------------------------------------
 
@@ -158,17 +191,20 @@ local function renderBlock(out, name, t, fmt)
     out[#out + 1] = "    },"
 end
 
--- meta = { flavor, build, skills = { id, ... } }
+-- meta = { flavor, build, skills = { id, ... }, hotfixes = vrai si des hotfixes ont été appliqués }
 function M.render(data, meta)
     local out = {
         "-- tools/Curated/client_" .. meta.flavor .. ".lua — tables du CLIENT de jeu, build " .. meta.build .. ".",
         "-- GÉNÉRÉ par tools/import_client.lua (via tools/fetch_client.ps1) depuis wago.tools. NE PAS ÉDITER.",
         "-- Lu par gen_flavor.lua (objet produit, réactifs) et gen_skill_colors.lua (seuils jaune/gris) :",
         "-- il COMBLE les trous de Wowhead, ne les remplace jamais (cf. tools/client_data.lua).",
-        "return {",
-        string.format("    build = %q,", meta.build),
-        "    skillLines = { " .. table.concat(meta.skills, ", ") .. " },",
     }
+    if meta.hotfixes then
+        out[#out + 1] = "-- Hotfixes du serveur appliqués par-dessus le build (cf. M.applyHotfixes)."
+    end
+    out[#out + 1] = "return {"
+    out[#out + 1] = string.format("    build = %q,", meta.build)
+    out[#out + 1] = "    skillLines = { " .. table.concat(meta.skills, ", ") .. " },"
     renderBlock(out, "produces", data.produces, function(v) return tostring(v) end)
     renderBlock(out, "reagents", data.reagents, function(v)
         local parts = {}

@@ -926,7 +926,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [20725] = "Nexus Crystal",
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70862 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -1570,7 +1570,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [7857] = { kind = "trainer", { 11073, 1337, "Annora", nil }, { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 3345, 1637, "Godan", "H" }, { 11074, 406, "Hgarth", "H" }, { 11072, 12, "Kitta Firewind", "A" } },
         [7859] = { { 4042, 406, "Singed Basilisk", nil }, { 4824, 719, "Aku'mai Fisher", nil }, { 216659, 331, "Fallenroot Satyr", nil } },
         [7861] = { kind = "trainer", { 11073, 1337, "Annora", nil }, { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 3345, 1637, "Godan", "H" }, { 11074, 406, "Hgarth", "H" }, { 11072, 12, "Kitta Firewind", "A" } },
-        [7863] = { kind = "trainer", { 5157, 1537, "Gimble Thistlefuzz", "A" } },
+        [7863] = { kind = "trainer", { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 11072, 12, "Kitta Firewind", "A" }, { 1317, nil, "Lucan Cordell", "A" } },
         [7867] = { { 3012, 1638, "Nata Dawnstrider", "H" }, { 3537, 267, "Zixil", nil } },
         [13378] = { kind = "trainer", { 11073, 1337, "Annora", nil }, { 5157, 1537, "Gimble Thistlefuzz", "A" }, { 3345, 1637, "Godan", "H" }, { 11074, 406, "Hgarth", "H" }, { 11072, 12, "Kitta Firewind", "A" } },
         [13380] = { { 4051, 406, "Cenarion Botanist", "A" }, { 1016, 11, "Highland Lashtail", nil }, { 11858, 406, "Grundig Darkcloud", nil } },
@@ -1801,6 +1801,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [1051] = { 1437, 47.4, 16.4 },
         [1053] = { 1437, 46.4, 16.4 },
         [1054] = { 1437, 46.6, 18.6 },
+        [1317] = { 1453, 53.1, 74.3 },
         [1318] = { 1453, 43.0, 64.2 },
         [1768] = { 1421, 55.3, 28.1 },
         [1870] = { 1421, 55.4, 34.8 },
