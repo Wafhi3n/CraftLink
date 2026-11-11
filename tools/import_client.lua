@@ -29,19 +29,31 @@ for i = 3, #arg do skills[#skills + 1] = tonumber(arg[i]) end
 if #skills == 0 then print("ERREUR : aucune ligne de compétence passée."); os.exit(1) end
 
 local build = dir:gsub("[\\/]+$", ""):match("([^\\/]+)$")
-local tables = {}
+local tables, hotfixed = {}, 0
 for _, name in ipairs(TABLES) do
     local text = read(dir .. [[\]] .. name .. ".csv")
     if not text then print("ERREUR : " .. dir .. "\\" .. name .. ".csv absent."); os.exit(1) end
     tables[name] = Client.records(text)
-    print(string.format("  %-17s %d lignes", name, #tables[name]))
+    -- Les hotfixes du serveur (relevés par fetch_client.ps1) passent par-dessus : c'est ce que le jeu
+    -- applique. Absents (cache d'avant le 2026-11-11) : la table du build seule, comme avant.
+    local hot = read(dir .. [[\]] .. name .. ".hotfixes.csv")
+    local note = ""
+    if hot then
+        local st
+        tables[name], st = Client.applyHotfixes(tables[name], Client.records(hot))
+        hotfixed = hotfixed + st.replaced + st.added + st.removed
+        note = string.format("  (hotfixes : %d remplacées, %d ajoutées, %d retirées)", st.replaced, st.added, st.removed)
+    end
+    print(string.format("  %-17s %d lignes%s", name, #tables[name], note))
 end
 
 local data = Client.extract(tables, skills)
 local function count(t) local n = 0; for _ in pairs(t) do n = n + 1 end; return n end
 local out = string.format([[tools\Curated\client_%s.lua]], flavor)
 local f = assert(io.open(out, "wb"))
-f:write(Client.render(data, { flavor = flavor, build = build, skills = skills }))
+-- Le bilan chiffré reste à l'écran : écrit dans le fichier commité, il bougerait à chaque hotfix d'un
+-- sort sans rapport avec les métiers.
+f:write(Client.render(data, { flavor = flavor, build = build, skills = skills, hotfixes = hotfixed > 0 }))
 f:close()
 print(string.format("%s : build %s, objets produits %d, réactifs %d, seuils %d",
     out, build, count(data.produces), count(data.reagents), count(data.trivial)))

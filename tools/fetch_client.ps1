@@ -11,11 +11,18 @@
 # Usage (cwd = f:\AddonDevellopement\CraftLink) :
 #   .\tools\fetch_client.ps1                       # Camelot, dernier build du client
 #   .\tools\fetch_client.ps1 -Build 1.60.1.70862   # un build precis
+#   .\tools\fetch_client.ps1 -NoHotfixes           # la table du build seule (hors ligne, comparaison)
 # Puis : .\tools\refresh_flavor.ps1 -SkipFetch [-Apply]
+#
+# HOTFIXES (2026-11-11) : le CSV est la table telle que le BUILD la livre ; le serveur la corrige ensuite
+# sans nouveau build, et le jeu applique ces hotfixes (Coarse Grinding Stone grise a 90 en jeu, 75 dans le
+# CSV). wago.tools les publie sur sa page /hotfixes. Ils sont RELUS a chaque passage, cache ou pas, dans
+# tools\db2\<build>\<Table>.hotfixes.csv ; import_client.lua les applique (client_data.lua, applyHotfixes).
 
 param(
     [string] $Flavor = "Camelot",
-    [string] $Build  = ""
+    [string] $Build  = "",
+    [switch] $NoHotfixes
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,6 +69,77 @@ foreach ($t in $Tables) {
         exit 1
     }
     Start-Sleep -Seconds 1
+}
+
+# --- Hotfixes du serveur ---------------------------------------------------------------------------
+# La page /hotfixes porte ses donnees dans l'attribut data-page (JSON). Recherche "<n de build> <table>",
+# 25 entrees par page, une entree par (region, langue, poussee) : on garde la DERNIERE poussee par
+# enregistrement. data = les colonnes du CSV dans son ordre, tableaux a plat (verifie : meme nombre).
+function Get-HotfixRows([string] $table, [string] $buildNo) {
+    $search = [uri]::EscapeDataString("$buildNo $($table.ToLower())")
+    $tmp = Join-Path $dir "hotfixes.page.tmp"
+    $latest = @{}; $page = 1; $last = 1
+    while ($page -le $last) {
+        & curl.exe -s -A $UA "https://wago.tools/hotfixes?product=$product&search=$search&page=$page" -o $tmp --max-time 120
+        $html = if (Test-Path $tmp) { Get-Content $tmp -Raw -Encoding UTF8 } else { "" }
+        $m = [regex]::Match($html, 'data-page="([^"]*)"')
+        if (-not $m.Success) { throw "hotfixes $table : page $page illisible" }
+        $hf = ([System.Net.WebUtility]::HtmlDecode($m.Groups[1].Value) | ConvertFrom-Json).props.hotfixes
+        $last = [math]::Max(1, [int]$hf.last_page)
+        foreach ($r in $hf.data) {
+            if ($r.table_name -ne $table) { continue }
+            $k = [string]$r.record_id
+            if (-not $latest.ContainsKey($k) -or [long]$r.push_id -gt [long]$latest[$k].push_id) { $latest[$k] = $r }
+        }
+        Write-Host ("`r  [hotfix] {0,-17} page {1}/{2}" -f $table, $page, $last) -NoNewline
+        $page++
+        Start-Sleep -Seconds 1
+    }
+    if (Test-Path $tmp) { Remove-Item $tmp -Force }
+    Write-Host ""
+    return $latest
+}
+
+function Format-CsvField($v) {
+    if ($null -eq $v) { return "" }
+    $s = if ($v -is [double] -or $v -is [single] -or $v -is [decimal]) { $v.ToString([cultureinfo]::InvariantCulture) } else { [string]$v }
+    if ($s -match '[",\r\n]') { return '"' + $s.Replace('"', '""') + '"' }
+    return $s
+}
+
+# <Table>.hotfixes.csv : HotfixStatus + les colonnes du CSV. Un enregistrement retire (statut 2) ou
+# invalide (3) n'a pas de donnees : seule sa colonne ID est remplie.
+function Write-HotfixCsv([string] $table, $latest) {
+    $head = (Get-Content (Join-Path $dir "$table.csv") -TotalCount 1).Split(',')
+    $idIdx = [array]::IndexOf($head, "ID")
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add("HotfixStatus," + ($head -join ","))
+    foreach ($k in ($latest.Keys | Sort-Object { [long]$_ })) {
+        $r = $latest[$k]
+        $vals = New-Object System.Collections.Generic.List[string]
+        if ([int]$r.status -eq 1 -and $null -ne $r.data) {
+            foreach ($v in $r.data) {
+                if ($v -is [array]) { foreach ($x in $v) { $vals.Add((Format-CsvField $x)) } } else { $vals.Add((Format-CsvField $v)) }
+            }
+            if ($vals.Count -ne $head.Count) { throw "hotfix $table #$k : $($vals.Count) champs pour $($head.Count) colonnes" }
+        } else {
+            for ($i = 0; $i -lt $head.Count; $i++) { $vals.Add($(if ($i -eq $idIdx) { $k } else { "" })) }
+        }
+        $lines.Add("$($r.status)," + ($vals -join ","))
+    }
+    [System.IO.File]::WriteAllLines((Join-Path $dir "$table.hotfixes.csv"), $lines, (New-Object System.Text.UTF8Encoding($false)))
+    return $lines.Count - 1
+}
+
+if (-not $NoHotfixes) {
+    $buildNo = $Build.Split('.')[-1]
+    foreach ($t in $Tables) {
+        $n = Write-HotfixCsv $t.Name (Get-HotfixRows $t.Name $buildNo)
+        Write-Host ("  [hotfix] {0,-17} {1} enregistrement(s)" -f $t.Name, $n) -ForegroundColor Green
+    }
+} else {
+    foreach ($t in $Tables) { $p = Join-Path $dir "$($t.Name).hotfixes.csv"; if (Test-Path $p) { Remove-Item $p -Force } }
+    Write-Host "  [hotfix] ignores (-NoHotfixes) : la table du build seule" -ForegroundColor Yellow
 }
 
 # Les lignes de competence des metiers : celles de gen_flavor.lua, jamais une seconde liste.
