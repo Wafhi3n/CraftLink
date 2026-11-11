@@ -1,9 +1,10 @@
--- tools/Curated/client_Camelot.lua — tables du CLIENT de jeu, build 1.60.1.70862.
+-- tools/Curated/client_Camelot.lua — tables du CLIENT de jeu, build 1.60.1.70888.
 -- GÉNÉRÉ par tools/import_client.lua (via tools/fetch_client.ps1) depuis wago.tools. NE PAS ÉDITER.
 -- Lu par gen_flavor.lua (objet produit, réactifs) et gen_skill_colors.lua (seuils jaune/gris) :
 -- il COMBLE les trous de Wowhead, ne les remplace jamais (cf. tools/client_data.lua).
+-- Hotfixes du serveur appliqués par-dessus le build (cf. M.applyHotfixes).
 return {
-    build = "1.60.1.70862",
+    build = "1.60.1.70888",
     skillLines = { 171, 164, 185, 333, 202, 129, 165, 186, 40, 197 },
     produces = {
         [2149] = 2302,
@@ -4963,7 +4964,7 @@ return {
         [3323] = { 75, 115 },
         [3324] = { 75, 115 },
         [3325] = { 75, 115 },
-        [3326] = { 50, 75 },
+        [3326] = { 50, 90 },
         [3328] = { 115, 145 },
         [3330] = { 130, 160 },
         [3331] = { 135, 165 },
