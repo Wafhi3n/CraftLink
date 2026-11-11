@@ -80,6 +80,16 @@ Vanilla FIGÉ (dataVersion `1792301894`), qui ne doit plus jamais être régén�
   confirmées, 97 corrigées (71 niveaux du jeu plus bas que Wowhead, 24 seuils changés depuis le
   2026-10-03, 2 oranges sans effet). Puis `refresh_flavor.ps1 -SkipFetch [-Apply]`. Test :
   `tests/test_client_data.lua`.
+  **Hotfixes du serveur (depuis le 2026-11-11)** : le CSV est la table que le BUILD livre ; le serveur
+  la corrige ensuite sans nouveau build, et le jeu applique ces hotfixes. Mesuré le 2026-11-11 (build
+  70888, hotfix de 04:17) : Coarse Grinding Stone (3326) grise à 90 en jeu, 75 dans le CSV.
+  `fetch_client.ps1` relit donc à CHAQUE passage, cache ou pas, la page `/hotfixes` de wago.tools
+  (recherche « <n° de build> <table> », données dans l'attribut `data-page`), garde la dernière
+  poussée par enregistrement et l'écrit dans `tools/db2/<build>/<Table>.hotfixes.csv` (mêmes
+  colonnes + `HotfixStatus`) ; `import_client.lua` l'applique (`client_data.applyHotfixes` : statut
+  1 remplace ou ajoute, 2 retire, le reste ne change rien). Compter ~3 min (SpellEffect : ~165
+  pages, une par seconde). `-NoHotfixes` : la table du build seule. Une poussée peut arriver sans
+  nouveau build : relancer `fetch_client.ps1` quand le jeu dit autre chose que COC.
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.
