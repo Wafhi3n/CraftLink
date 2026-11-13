@@ -22,8 +22,10 @@
 --   comble   : Wowhead se tait, le client parle      -> on écrit la valeur du client
 --   confirme : les deux disent la même chose          -> rien de neuf
 --   conflit  : les deux se contredisent               -> on garde Wowhead, et le conflit s'imprime
--- SEULE EXCEPTION, les couleurs d'une recette au niveau d'apprentissage connu :
+-- DEUX EXCEPTIONS, les couleurs d'une recette au niveau d'apprentissage connu :
 --   corrige  : la ligne de Wowhead contredit le client -> le client calé sur ce niveau la remplace
+--   corrige  : une ligne « grise dès l'apprentissage » dont le gris dépasse celui du client -> les
+--              seuils du client tels quels, orange inconnu (cf. fillColors, 2026-11-13)
 
 local M = {}
 
@@ -300,6 +302,18 @@ end
 -- et Forever enseigne beaucoup de recettes plus bas (souvent de 25) ; ses seuils datent aussi du
 -- 2026-10-03. Vu en jeu le 2026-11-07, Forge à 94 : Silver Rod (7818) GRIS, comme le dit le client
 -- (gris 85), là où la ligne Wowhead (gris 100) faisait croire à COC qu'il rapportait encore.
+-- SECONDE EXCEPTION (2026-11-13) : une ligne « grise dès l'apprentissage » (jaune ET vert à 0) dont le
+-- gris dépasse celui du client. Ce gris n'est que le niveau de Wowhead (le calage a tout écrasé dessus),
+-- et ce niveau peut être faux sur Forever : pierres solides, Wowhead 200, formateur du jeu 175 (relevé
+-- COC), gris du client 185 -- vu en jeu le 2026-11-13, grises à 185, conseillées en dessous. On écrit
+-- alors les seuils du client TELS QUELS, orange à 0 (niveau inconnu, même forme que les lignes « 0xx ») :
+-- apprise au niveau des données, la recette reste grise (rien ne change) ; apprise plus bas (niveau
+-- relevé chez le formateur, au runtime ou par import_observed), elle a sa vraie fenêtre. Seulement si
+-- le niveau est connu : sans lui, COC prendrait l'orange 0 pour le niveau requis.
+local function greyOnLearnAboveClient(c, t)
+    return c[2] == 0 and c[3] == 0 and t[2] < c[4]
+end
+
 function M.fillColors(colors, recipes, data, learnedAt, stat)
     if not (data and data.trivial) then return end
     for sid in pairs(recipes) do
@@ -312,6 +326,9 @@ function M.fillColors(colors, recipes, data, learnedAt, stat)
             else
                 local kind = judgeColors(c, want, L ~= nil)
                 if kind == "conflit" and L then
+                    kind = "corrige"; colors[sid] = want
+                elseif kind == "confirme" and L and greyOnLearnAboveClient(c, t) then
+                    want = wantedColors(t, 0)
                     kind = "corrige"; colors[sid] = want
                 end
                 bump(stat, "skillColors", kind)
