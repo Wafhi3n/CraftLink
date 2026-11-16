@@ -926,7 +926,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [20725] = "Nexus Crystal",
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -1124,7 +1124,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [1219587] = { 300, 320, 340, 360 },
         [1220623] = { 300, 320, 340, 360 },
         [1220624] = { 300, 320, 340, 360 },
-        [1230643] = { 0, 20, 22, 25 },
+        [1230643] = { 20, 20, 20, 20 },
         [1231128] = { 280, 305, 307, 310 },
         [1231139] = { 280, 305, 307, 310 },
         [1231164] = { 280, 305, 307, 310 },
@@ -1182,7 +1182,7 @@ CraftLink:RegisterProfession("Enchanting", {
         [1249128] = { 300, 320, 340, 360 },
         [1249152] = { 300, 320, 340, 360 },
         [1249154] = { 300, 320, 340, 360 },
-        [1263056] = { 140, 140, 142, 145 },
+        [1263056] = { 140, 140, 140, 140 },
         [1263082] = { 300, 300, 300, 300 },
         [1294054] = { 295, 295, 297, 300 },
         [1306520] = { 300, 310, 317, 325 },

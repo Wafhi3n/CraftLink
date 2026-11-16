@@ -2413,7 +2413,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [285291] = 1317964,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -2726,7 +2726,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [1224637] = { 250, 260, 282, 305 },
         [1224638] = { 270, 280, 292, 305 },
         [1224639] = { 260, 270, 287, 305 },
-        [1230171] = { 20, 20, 22, 25 },
+        [1230171] = { 20, 20, 20, 20 },
         [1245287] = { 0, 10, 12, 15 },
         [1252229] = { 35, 40, 40, 40 },
         [1252230] = { 35, 40, 40, 40 },
@@ -2868,7 +2868,7 @@ CraftLink:RegisterProfession("Blacksmithing", {
         [1252366] = { 300, 320, 330, 340 },
         [1252367] = { 300, 320, 330, 340 },
         [1252368] = { 300, 320, 330, 340 },
-        [1263041] = { 140, 140, 142, 145 },
+        [1263041] = { 140, 140, 140, 140 },
         [1263073] = { 300, 300, 300, 300 },
         [1292945] = { 300, 320, 325, 330 },
         [1292946] = { 300, 320, 325, 330 },

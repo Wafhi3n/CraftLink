@@ -1307,7 +1307,7 @@ CraftLink:RegisterProfession("Engineering", {
         [286087] = 1319165,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -1508,9 +1508,9 @@ CraftLink:RegisterProfession("Engineering", {
         [1226212] = { 280, 280, 282, 285 },
         [1226213] = { 300, 305, 305, 305 },
         [1228088] = { 250, 255, 257, 260 },
-        [1230656] = { 0, 20, 22, 25 },
+        [1230656] = { 20, 20, 20, 20 },
         [1249634] = { 0, 130, 142, 155 },
-        [1263034] = { 140, 140, 142, 145 },
+        [1263034] = { 140, 140, 140, 140 },
         [1263083] = { 300, 300, 300, 300 },
         [1266893] = { 25, 25, 27, 30 },
         [1266905] = { 25, 25, 30, 35 },

@@ -942,7 +942,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [274280] = 1293562,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -1071,7 +1071,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [1213563] = { 0, 315, 322, 330 },
         [1213565] = { 0, 315, 322, 330 },
         [1213571] = { 0, 315, 322, 330 },
-        [1230564] = { 0, 20, 22, 25 },
+        [1230564] = { 20, 20, 20, 20 },
         [1231583] = { 250, 290, 310, 330 },
         [1244421] = { 250, 260, 265, 270 },
         [1244645] = { 0, 85, 105, 125 },
@@ -1136,7 +1136,7 @@ CraftLink:RegisterProfession("Alchemy", {
         [1251751] = { 245, 250, 252, 255 },
         [1251752] = { 280, 285, 287, 290 },
         [1251753] = { 280, 285, 287, 290 },
-        [1263005] = { 140, 140, 142, 145 },
+        [1263005] = { 140, 140, 140, 140 },
         [1263078] = { 300, 300, 300, 300 },
         [1293559] = { 300, 320, 325, 330 },
         [1293560] = { 300, 320, 325, 330 },

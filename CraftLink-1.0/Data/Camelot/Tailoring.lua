@@ -2278,7 +2278,7 @@ CraftLink:RegisterProfession("Tailoring", {
         [279320] = 1306545,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -2575,7 +2575,7 @@ CraftLink:RegisterProfession("Tailoring", {
         [1224614] = { 260, 270, 287, 305 },
         [1227723] = { 250, 260, 262, 265 },
         [1227724] = { 290, 300, 302, 305 },
-        [1229504] = { 0, 20, 22, 25 },
+        [1229504] = { 20, 20, 20, 20 },
         [1257013] = { 5, 30, 47, 65 },
         [1257017] = { 70, 75, 92, 110 },
         [1257368] = { 35, 55, 55, 55 },
@@ -2706,9 +2706,9 @@ CraftLink:RegisterProfession("Tailoring", {
         [1257493] = { 260, 275, 290, 305 },
         [1257494] = { 260, 275, 290, 305 },
         [1257495] = { 300, 315, 330, 345 },
-        [1263032] = { 140, 140, 142, 145 },
+        [1263032] = { 140, 140, 140, 140 },
         [1263080] = { 300, 300, 300, 300 },
-        [1263425] = { 0, 20, 22, 25 },
+        [1263425] = { 20, 20, 20, 20 },
         [1292941] = { 300, 320, 325, 330 },
         [1292942] = { 300, 320, 325, 330 },
         [1292943] = { 300, 320, 325, 330 },

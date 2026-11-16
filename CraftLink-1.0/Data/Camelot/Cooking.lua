@@ -684,7 +684,7 @@ CraftLink:RegisterProfession("Cooking", {
         [286153] = 1319313,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -809,13 +809,13 @@ CraftLink:RegisterProfession("Cooking", {
         [1250157] = { 75, 80, 87, 95 },
         [1250158] = { 275, 280, 295, 310 },
         [1252566] = { 85, 125, 145, 165 },
-        [1262978] = { 140, 145, 147, 150 },
+        [1262978] = { 140, 145, 145, 145 },
         [1263067] = { 300, 300, 300, 300 },
         [1270632] = { 0, 80, 82, 85 },
         [1270633] = { 25, 30, 37, 45 },
         [1270635] = { 35, 40, 47, 55 },
-        [1283400] = { 90, 95, 100, 105 },
-        [1291341] = { 200, 205, 212, 220 },
+        [1283400] = { 90, 95, 95, 95 },
+        [1291341] = { 200, 205, 205, 205 },
         [1294014] = { 275, 280, 282, 285 },
         [1295805] = { 200, 220, 230, 240 },
         [1295834] = { 185, 200, 215, 230 },

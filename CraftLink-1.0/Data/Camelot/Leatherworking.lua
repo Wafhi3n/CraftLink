@@ -2878,7 +2878,7 @@ CraftLink:RegisterProfession("Leatherworking", {
         [279307] = 1306532,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -3203,7 +3203,7 @@ CraftLink:RegisterProfession("Leatherworking", {
         [1224630] = { 260, 270, 287, 305 },
         [1226689] = { 275, 280, 285, 290 },
         [1226690] = { 275, 280, 285, 290 },
-        [1229432] = { 0, 20, 22, 25 },
+        [1229432] = { 20, 20, 20, 20 },
         [1254965] = { 235, 235, 245, 255 },
         [1254966] = { 235, 235, 245, 255 },
         [1254967] = { 300, 320, 330, 340 },
@@ -3383,7 +3383,7 @@ CraftLink:RegisterProfession("Leatherworking", {
         [1255144] = { 35, 40, 40, 40 },
         [1255145] = { 35, 40, 40, 40 },
         [1255146] = { 35, 40, 40, 40 },
-        [1263031] = { 140, 140, 142, 145 },
+        [1263031] = { 140, 140, 140, 140 },
         [1263079] = { 300, 300, 300, 300 },
         [1292920] = { 300, 320, 325, 330 },
         [1292921] = { 300, 320, 325, 330 },
