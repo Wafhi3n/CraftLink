@@ -93,6 +93,15 @@ Vanilla FIGÉ (dataVersion `1792301894`), qui ne doit plus jamais être régén�
 - `check_dataversion.lua` — **garde de l'invariant** : recalcule hors-jeu la dataVersion de chaque
   saveur avec l'algorithme exact de la lib. Échoue (exit 1) si Vanilla ≠ `1792301894` (= bitfields
   de registre déjà diffusés chez les joueurs invalidés). À lancer avant/après TOUTE régénération.
+- `sante.lua` — **bilan de santé, en lecture seule** (n'écrit rien, ne télécharge rien) : build des
+  tables du client dans les données contre les caches `tools/db2/` et le client installé (`.build.info`,
+  produit `wowf`) ; par métier, les recettes sans objet (hors enchantements), sans `learnedAt`, sans
+  couleurs, grises dès l'apprentissage (jaune et vert à 0), à seuils tous égaux `{L,L,L,L}` ; les sorts
+  du client absents de CraftLink (lignes mortes et rangs compris : à regarder, pas à combler d'office) ;
+  les conflits de couleurs de la dernière passe. `-ids` liste les spellID, `-wow <dossier>` change la
+  racine du jeu. C'est le bilan de l'agent `data-keeper` de l'outillage : la façon de compter ne bouge
+  pas d'une fois sur l'autre, un écart veut dire que les données ont changé.
+  `..\tools\elune\bin\lua.exe tools\sante.lua Camelot -ids`
 - `gen_flavor.lua` — génère un set COMPLET de saveur (`RegisterProfession`) : `Data/<Saveur>/*.lua`
   + `Data/<Saveur>.xml`. À utiliser quand la saveur **retire** des recettes et pas seulement en
   ajoute — une couche (`gen_season.lua`) ne sait que appondre. Modes : `-check` (contrôle de dérive,
