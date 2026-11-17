@@ -82,7 +82,11 @@ local function printClient()
     if not s then return end
     print(s)
     for _, c in ipairs(clientStat.conflicts) do
-        print(string.format("  CONFLIT %s %d : Wowhead et client se contredisent -> on garde WOWHEAD", c[1], c[2]))
+        if c[5] == "corrige" then
+            print(string.format("  CORRIGE %s %d : Wowhead et client se contredisent -> on prend le CLIENT", c[1], c[2]))
+        else
+            print(string.format("  CONFLIT %s %d : Wowhead et client se contredisent -> on garde WOWHEAD", c[1], c[2]))
+        end
     end
 end
 

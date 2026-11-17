@@ -66,8 +66,12 @@ Vanilla FIGÉ (dataVersion `1792301894`), qui ne doit plus jamais être régén�
   les deux postes). `gen_flavor.lua` y prend l'objet produit et les réactifs que la page n'a pas,
   `gen_skill_colors.lua` une ligne de couleurs aux recettes que la page ne colore pas (jaune = Trivial
   Low, vert = milieu, gris = TrivialHigh, chacun ramené au `learnedAt` : la règle de Wowhead
-  lui-même). **Il comble, il ne remplace jamais** ; un désaccord s'imprime (objets, réactifs).
-  **Seule exception, les couleurs d'une recette au `learnedAt` connu** : une ligne de Wowhead qui
+  lui-même). **Il comble, il ne remplace jamais** ; un désaccord s'imprime (objets).
+  **Première exception, les RÉACTIFS (2026-11-17)** : Blizzard corrige les quantités par hotfix sans
+  nouveau build (70938 : cinq bolts de Couture à +1, 3758, 6688, 6693, 6695, 12079), et le cache
+  Wowhead ne verra jamais un changement propre à Forever. Désaccord : le CLIENT remplace Wowhead
+  (`CORRIGE reagents <sort>` à l'impression de `gen_flavor.lua`).
+  **Seconde exception, les couleurs d'une recette au `learnedAt` connu** : une ligne de Wowhead qui
   contredit le client (orange compris) est REMPLACÉE par le client calé sur ce niveau, et listée dans
   `tools/db2/conflits_couleurs_<Saveur>.txt`. Pourquoi : la ligne de Wowhead, ce sont les mêmes
   seuils calés sur SON niveau, et Forever enseigne beaucoup de recettes plus bas (souvent de 25) ;
