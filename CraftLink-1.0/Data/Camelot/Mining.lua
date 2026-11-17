@@ -98,7 +98,7 @@ CraftLink:RegisterProfession("Mining", {
         [1306126] = 300,
     },
 
-    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70888 ; ne pas éditer à la main)
+    -- >>> gen_skill_colors.lua (généré — Wowhead forever + client 1.60.1.70938 ; ne pas éditer à la main)
     -- seuils de difficulté : [spellID] = { orange, jaune, vert, gris }
     -- (gris = rang où la recette ne rapporte plus de point)
     skillColors = {
@@ -115,9 +115,9 @@ CraftLink:RegisterProfession("Mining", {
         [16153] = { 250, 250, 250, 250 },
         [22967] = { 0, 310, 315, 320 },
         [1213638] = { 0, 315, 322, 330 },
-        [1230161] = { 20, 20, 22, 25 },
+        [1230161] = { 20, 20, 20, 20 },
         [1249637] = { 0, 275, 275, 275 },
-        [1262975] = { 140, 140, 142, 145 },
+        [1262975] = { 140, 140, 140, 140 },
         [1263071] = { 300, 300, 300, 300 },
         [1306126] = { 0, 300, 307, 315 },
     },

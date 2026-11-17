@@ -22,7 +22,12 @@
 --   comble   : Wowhead se tait, le client parle      -> on écrit la valeur du client
 --   confirme : les deux disent la même chose          -> rien de neuf
 --   conflit  : les deux se contredisent               -> on garde Wowhead, et le conflit s'imprime
--- DEUX EXCEPTIONS, les couleurs d'une recette au niveau d'apprentissage connu :
+-- TROIS EXCEPTIONS. La première, les RÉACTIFS (2026-11-17) : Blizzard corrige les quantités par
+--   hotfix SANS nouveau build (70938 : cinq bolts de Couture à +1, lignes 3758, 6688, 6693, 6695 et
+--   12079 de SpellReagents hotfixées), et le cache Wowhead lu par CraftLink ne verra jamais un
+--   changement propre à Forever. Désaccord -> le CLIENT remplace Wowhead (nature "corrige").
+--   Les objets produits gardent la règle « Wowhead gardé ».
+-- Les deux autres, les couleurs d'une recette au niveau d'apprentissage connu :
 --   corrige  : la ligne de Wowhead contredit le client -> le client calé sur ce niveau la remplace
 --   corrige  : une ligne « grise dès l'apprentissage » dont le gris dépasse celui du client -> les
 --              seuils du client tels quels, orange inconnu (cf. fillColors, 2026-11-13)
@@ -247,12 +252,17 @@ local function copyList(v)
     return c
 end
 
-local function fillField(e, field, v, stat, sid, same, copy)
+-- clientWins : en cas de désaccord, le client remplace Wowhead (réactifs, 2026-11-17) au lieu de
+-- s'imprimer seulement.
+local function fillField(e, field, v, stat, sid, same, copy, clientWins)
     if v == nil then return end
     if e[field] == nil then
         e[field] = copy(v); bump(stat, field, "comble")
     elseif same(e[field], v) then
         bump(stat, field, "confirme")
+    elseif clientWins then
+        stat.conflicts[#stat.conflicts + 1] = { field, sid, e[field], v, "corrige" }
+        e[field] = copy(v); bump(stat, field, "corrige")
     else
         bump(stat, field, "conflit")
         stat.conflicts[#stat.conflicts + 1] = { field, sid, e[field], v, "conflit" }
@@ -267,7 +277,7 @@ function M.fillRecipes(recipes, data, stat)
     local id = function(v) return v end
     for sid, e in pairs(recipes) do
         fillField(e, "produces", data.produces and data.produces[sid], stat, sid, same, id)
-        fillField(e, "reagents", data.reagents and data.reagents[sid], stat, sid, sameReagents, copyList)
+        fillField(e, "reagents", data.reagents and data.reagents[sid], stat, sid, sameReagents, copyList, true)
     end
 end
 
