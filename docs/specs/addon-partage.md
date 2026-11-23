@@ -1,6 +1,6 @@
 # CraftLink devient l'addon qui partage les recettes connues
 
-> État : **brouillon** · Direction et décisions A1-A2 du user le 2026-11-23 · Rien de codé · Q1 ouverte
+> État : **brouillon** · Direction et décisions A1, A2, A7 du user le 2026-11-23 · Rien de codé · A3-A6 à reconfirmer
 > Portée : CraftLink (dépôt `Wafhi3n/CraftLink`) et Crafting Order - Classic (COC) · Cible : WoW: Forever
 
 ## Le problème
@@ -82,12 +82,10 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
 - 2026-11-23, agent, **à reconfirmer** (A6) : sur CurseForge, CraftLink est une **dépendance obligatoire** de COC
   (relation « Required Dependency » : l'appli CurseForge l'installe toute seule). Onglet Source réglé avant le
   premier tag du nouveau projet.
-
-## Questions ouvertes
-
-- **Q1 (user)** : que voit un joueur qui n'a **que** CraftLink ? Rien (il partage en silence), une ligne
-  « fabricable par X, Y » dans l'infobulle des objets, ou une petite liste par commande. S'il ne voit rien, peu de
-  gens l'installeront seul.
+- 2026-11-23, **user** (A7, réponse à Q1) : un joueur qui n'a **que** CraftLink ne voit rien. Il **partage ses
+  infos**, et donc aussi avec le GM et les officiers. Ceux-ci, avec **CraftLink-Discord**, mettent à jour la base
+  du bot Discord avec tout ce que leur CraftLink sait (M6 de la spec du bot). CraftLink seul s'installe donc parce
+  que la guilde le demande, pas pour ce qu'il montre.
 
 ## Critères d'acceptation
 
@@ -109,7 +107,7 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
 
 ## Plan (2026-11-23, à jeter une fois fait)
 
-1. Réponse du user à Q1, reconfirmation de A3-A6.
+1. Reconfirmation de A3-A6 par le user.
 2. Fixtures de protocole tirées de COC v1.53.0 (critère 1), avant de déplacer quoi que ce soit.
 3. CraftLink : déclaration `addon` (branche de l'outillage), `.toc` de l'addon, sauvegarde ; les modules du partage
    déplacés depuis COC sans changer leur sortie. Critères 1, 4, 5.
