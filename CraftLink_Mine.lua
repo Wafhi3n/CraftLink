@@ -38,11 +38,18 @@ function Mine:Scan()
     if NS.Directory then NS.Directory:AnnounceThrottled() end
 end
 
+-- Une lecture qui casse (un build qui change la fenêtre) ne lève pas devant le joueur, mais ne se tait
+-- pas non plus : /craftlink montre la dernière erreur.
+local function safeScan()
+    local ok, err = pcall(Mine.Scan, Mine)
+    if not ok then NS.lastError = tostring(err) end
+end
+
 function Mine:ScanSoon()
     if self._scanTimer then return end
-    if not (C_Timer and C_Timer.After) then pcall(Mine.Scan, Mine); return end
+    if not (C_Timer and C_Timer.After) then safeScan(); return end
     self._scanTimer = true
-    C_Timer.After(0.3, function() Mine._scanTimer = nil; pcall(Mine.Scan, Mine) end)
+    C_Timer.After(0.3, function() Mine._scanTimer = nil; safeScan() end)
 end
 
 -- Point de métier gagné, métier appris ou oublié : mes niveaux repartent, une fois par série de 2 s.

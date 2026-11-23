@@ -12,18 +12,18 @@
 |---|---|---|
 | `LibStub\LibStub.lua` | LibStub is a simple versioning stub meant for use in Libraries. | 32 |
 | `CraftLink_Locale.lua` | socle de localisation du CHROME. | 14 |
-| `CraftLink_Locale_enUS.lua` | overlay ANGLAIS (enUS/enGB). | 21 |
-| `CraftLink_Locale_deDE.lua` | overlay ALLEMAND (deDE). | 20 |
-| `CraftLink_Locale_esES.lua` | overlay ESPAGNOL (esES/esMX). | 21 |
+| `CraftLink_Locale_enUS.lua` | overlay ANGLAIS (enUS/enGB). | 25 |
+| `CraftLink_Locale_deDE.lua` | overlay ALLEMAND (deDE). | 24 |
+| `CraftLink_Locale_esES.lua` | overlay ESPAGNOL (esES/esMX). | 25 |
 | `CraftLink_Api.lua` | les quelques adaptations d'API dont l'annuaire a besoin, reprises de CraftingOrderClassic_Compat.lua (COC v1.53.0) avec leur signature : NS.Api.X remplace COC.Api.X dans les modules copiés (spec docs/specs/addon-partage.md, étape 3). | 68 |
-| `CraftLink.lua` | socle de l'addon : table d'addon, réglages, SavedVariables, garde contre un ancien Crafting Order, commande /craftlink (spec docs/specs/addon-partage.md, A8 à A11). | 130 |
+| `CraftLink.lua` | socle de l'addon : table d'addon, réglages, SavedVariables, garde contre un ancien Crafting Order, commande /craftlink (spec docs/specs/addon-partage.md, A8 à A11). | 144 |
 | `CraftLink_Directory.lua` | l'annuaire des GENS (présence + qui peut crafter quoi), copié de Directory.lua de Crafting Order v1.53.0 (spec docs/specs/addon-partage.md, étape 3). | 494 |
 | `CraftLink_Directory_Skills.lua` | niveaux de compétence (couche « profil » de l'annuaire), copié de Directory_Skills.lua de COC v1.53.0 (spec docs/specs/addon-partage.md, étape 3). | 199 |
 | `CraftLink_Directory_Recipes.lua` | COUTURE de lecture du registre « qui sait crafter quoi » d'un artisan. | 212 |
 | `CraftLink_Directory_Presence.lua` | présence : la vérité JEU (amis/guilde) et sa fusion avec la vérité ADDON. | 150 |
 | `CraftLink_Directory_Community.lua` | le réseau SANS canal : la glue entre la bibliothèque et l'annuaire. | 41 |
 | `CraftLink_Directory_Room.lua` | la salle de découverte : le canal global rejoint pour SE PRÉSENTER, pas pour transporter. | 57 |
-| `CraftLink_Mine.lua` | MES recettes et mes niveaux : ce que CraftingOrderClassic.lua (v1.53.0) faisait pour l'annuaire, repris pour CraftLink seul (spec docs/specs/addon-partage.md, étape 3). | 65 |
+| `CraftLink_Mine.lua` | MES recettes et mes niveaux : ce que CraftingOrderClassic.lua (v1.53.0) faisait pour l'annuaire, repris pour CraftLink seul (spec docs/specs/addon-partage.md, étape 3). | 72 |
 
 ## Kit UI — référence `Skin.*` (extraite des fichiers *Skin*)
 
@@ -77,7 +77,7 @@
 > Silence au chat (A10) : CraftLink n'écrit qu'en réponse à /craftlink, plus une seule ligne, une fois
 > par compte, quand la garde le met en pause.
 
-**API** : `NS:Print(msg)` · `NS:Printf(fmt, ...)` · `NS:OldCraftingOrder()` · `NS:CheckGuard()` · `NS:CountArtisans()` · `NS:Status()` · `NS:Start()` · `NS:ApplyGlobal(on)` · `NS:SetGlobal(on)` · `NS:Slash(msg)`
+**API** : `NS:Print(msg)` · `NS:Printf(fmt, ...)` · `NS:OldCraftingOrder()` · `NS:CheckGuard()` · `NS:CountArtisans()` · `NS:NoRecipeYet()` · `NS:Status()` · `NS:Start()` · `NS:ApplyGlobal(on)` · `NS:SetGlobal(on)` · `NS:Slash(msg)`
 
 ### `CraftLink_Directory.lua`
 > CraftLink_Directory.lua — l'annuaire des GENS (présence + qui peut crafter quoi), copié de

@@ -66,13 +66,25 @@ function NS:CountArtisans()
     return n
 end
 
+-- Je connais des métiers mais aucune de leurs recettes : la fenêtre de métier n'a encore jamais été lue
+-- (CraftLink tout neuf). Mes niveaux partent, mes recettes non, tant que je ne l'ai pas ouverte.
+function NS:NoRecipeYet()
+    local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
+    local skills = self.Directory and self.Directory.mySkills
+    return lib ~= nil and next(skills or {}) ~= nil and next(lib.myKnown or {}) == nil
+end
+
 function NS:Status()
     if self.paused then
         return L["en pause : Crafting Order partage déjà tes recettes. CraftLink prendra le relais quand Crafting Order sera à jour."]
     end
+    if self.failed then return L["à l'arrêt : la bibliothèque CraftLink-1.0 ne s'est pas chargée (essaie /reload)."] end
     local global = self.db and self.db.global
-    return string.format(L["partage actif, %d artisan(s) connu(s) ; canal global : %s"], self:CountArtisans(),
+    local line = string.format(L["partage actif, %d artisan(s) connu(s) ; canal global : %s"], self:CountArtisans(),
         global and L["rejoint"] or L["pas rejoint (/craftlink global pour le rejoindre)"])
+    if self:NoRecipeYet() then line = line .. " — " .. L["ouvre chacun de tes métiers une fois pour partager tes recettes."] end
+    if self.lastError then line = line .. " — " .. string.format(L["dernière erreur de lecture du métier : %s"], self.lastError) end
+    return line
 end
 
 -- ------------------------------------------------------------------ le démarrage du partage
@@ -80,7 +92,7 @@ end
 -- COC) ; la salle de découverte seulement si le joueur l'a demandée (A11) ; puis mes recettes et l'annuaire.
 function NS:Start()
     local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
-    if not (lib and self.Directory) then return end
+    if not (lib and self.Directory) then self.failed = true; return end   -- /craftlink le dira
     if lib.SetAutoJoin then lib:SetAutoJoin(false) end
     if lib.SetDiscovery then lib:SetDiscovery(self.db.global == true) end
     if self.Mine then self.Mine:Start() end
@@ -101,6 +113,8 @@ end
 function NS:Slash(msg)
     local cmd, arg = (msg or ""):lower():match("^%s*(%S*)%s*(%S*)")
     if cmd == "" then
+        -- Un geste du joueur : si le global est rejoint, un nouveau bonjour à la salle (30 s au plus près).
+        if not (self.paused or self.failed) and self.Directory and self.Directory.RoomHello then self.Directory:RoomHello() end
         self:Print(self:Status())
     elseif cmd == "global" and (arg == "" or arg == "on") then
         self:SetGlobal(true)

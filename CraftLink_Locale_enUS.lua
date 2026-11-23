@@ -17,5 +17,9 @@ local T = {
     ["canal global quitté."] = "global channel left.",
     ["version %s. Commandes : /craftlink (état), /craftlink global, /craftlink global off"]
         = "version %s. Commands: /craftlink (status), /craftlink global, /craftlink global off",
+    ["à l'arrêt : la bibliothèque CraftLink-1.0 ne s'est pas chargée (essaie /reload)."]
+        = "stopped: the CraftLink-1.0 library did not load (try /reload).",
+    ["ouvre chacun de tes métiers une fois pour partager tes recettes."] = "open each of your professions once to share your recipes.",
+    ["dernière erreur de lecture du métier : %s"] = "last profession read error: %s",
 }
 for k, v in pairs(T) do NS.L[k] = v end
