@@ -146,13 +146,18 @@ Ajusté à la copie (étape 3, 2026-11-23) : de `Directory_Community.lua`, seule
    lancement.
 4. [check] Les quatre portes passent pour CraftLink (déclaré `addon` dans `addons.json`) et pour COC.
 5. [agent] `craftlink-protocol-reviewer` ne trouve aucun changement de protocole ; `api-gotcha-reviewer` rien de neuf.
-6. [humain] Au banc, compte A avec COC + CraftLink, compte B avec **CraftLink seul** : A voit B comme artisan avec
-   ses recettes dans l'annuaire de COC. Témoin : B avec COC, avant la découpe. Observateur : le user.
-7. [humain] Au banc, compte A avec le nouvel ensemble, compte B avec COC v1.53.0 (ancien) : chacun voit l'autre, et
-   une commande fait son cycle complet. Témoin : la validation à deux comptes du cycle de commande. Observateur : le
-   user.
+6. [humain] Le perso du user avec **CraftLink seul** : les vrais guildiens qui ont COC (v1.53.0, publié) le voient
+   comme artisan avec ses recettes. Le user n'a qu'un perso sur le live (dit le 2026-11-23) : la moitié qu'il
+   observe seul est la réponse des guildiens à son bonjour (compte de `/craftlink`, roster de `CraftLinkDB` lu
+   après la séance) ; l'annuaire vu de l'autre côté demande un guildien qui accepte de regarder. Témoin : le perso
+   avec COC, avant la découpe. Observateur : le user (et ce guildien).
+7. [humain] Le perso du user avec le nouvel ensemble, un vrai joueur avec COC v1.53.0 (ancien) : chacun voit
+   l'autre, et une commande fait son cycle complet. Témoin : la validation à deux comptes du cycle de commande.
+   Observateur : le user et ce joueur (un seul perso sur le live : pas de second compte à soi).
 8. [humain] Un ancien COC avec le nouvel addon CraftLink : un seul PONG par PING (trace `/co trace`), un message
-   unique au joueur, et COC marche comme avant (annuaire, commandes). Observateur : le user.
+   unique au joueur, et COC marche comme avant (annuaire, commandes). Un seul perso suffit, en cochant les addons
+   tour à tour. Témoin : les gestionnaires réseau de la bibliothèque avec COC seul (`_handlers`, mêmes nombres).
+   Observateur : le user.
 9. [humain] `/craftlink` répond en une ligne : partage actif, nombre d'artisans connus, global rejoint ou non.
    Sans la commande, CraftLink n'écrit rien dans le chat. Témoin : le nombre d'artisans de l'annuaire de COC sur le
    même compte. Observateur : le user.
@@ -192,7 +197,8 @@ qui s'y branche.
    l'accord du user), `CraftLink.toc`, `CraftLinkDB`, `.pkgmeta` ; les modules du partage **copiés** depuis COC sans
    changer leur sortie (COC garde les siens jusqu'à l'étape 6) ; la garde contre l'ancien COC ; `/craftlink`.
    Critères 1, 4, 5, 9, 10.
-4. Banc à deux comptes : critères 6 et 8.
+4. Banc sur le seul perso du live, trois connexions (COC seul, COC + CraftLink, CraftLink seul) : critères 8, 9,
+   10, et la moitié de 6 qui se voit sans autre joueur (fiche `CraftLink--feat-craftlink-addon`, 2026-11-23).
 5. Le user crée le projet CurseForge (`craftlink`), règle l'onglet Source, la page est écrite (skill
    `curseforge-copy`) ; tag `v0.1.0` sur son feu vert ; modération.
 6. Après la validation : COC sans `Libs/CraftLink-1.0` ni `sync-libs.ps1` côté COC, `## Dependencies: CraftLink`,
