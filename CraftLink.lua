@@ -75,8 +75,24 @@ function NS:Status()
         global and L["rejoint"] or L["pas rejoint (/craftlink global pour le rejoindre)"])
 end
 
--- Le canal global ne se rejoint que sur la demande du joueur, et c'est retenu (A11). Le branchement
--- réseau (NS.ApplyGlobal) vient avec les modules du partage ; en pause, c'est Crafting Order qui mène.
+-- ------------------------------------------------------------------ le démarrage du partage
+-- Au PLAYER_LOGIN, seulement hors pause. Canal plein coupé pour tous (morcelé sur Forever, comme chez
+-- COC) ; la salle de découverte seulement si le joueur l'a demandée (A11) ; puis mes recettes et l'annuaire.
+function NS:Start()
+    local lib = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
+    if not (lib and self.Directory) then return end
+    if lib.SetAutoJoin then lib:SetAutoJoin(false) end
+    if lib.SetDiscovery then lib:SetDiscovery(self.db.global == true) end
+    if self.Mine then self.Mine:Start() end
+    self.Directory:Start()
+end
+
+function NS:ApplyGlobal(on)
+    if self.Directory and self.Directory.SetRoom then self.Directory:SetRoom(on) end
+end
+
+-- Le canal global ne se rejoint que sur la demande du joueur, et c'est retenu (A11). En pause, c'est
+-- Crafting Order qui mène : on retient seulement.
 function NS:SetGlobal(on)
     self.db.global = on and true or false
     if not self.paused and self.ApplyGlobal then self:ApplyGlobal(self.db.global) end

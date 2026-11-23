@@ -21,5 +21,18 @@ CraftLink_Locale_enUS.lua
 CraftLink_Locale_deDE.lua
 CraftLink_Locale_esES.lua
 
-# Socle : table d'addon, SavedVariables, garde contre un ancien Crafting Order, commande /craftlink.
+# Socle : adaptations d'API, table d'addon, SavedVariables, garde contre un ancien Crafting Order,
+# commande /craftlink, démarrage du partage.
+CraftLink_Api.lua
 CraftLink.lua
+
+# Le partage, copié de l'annuaire de Crafting Order v1.53.0 (même protocole, au caractère près).
+CraftLink_Directory.lua
+CraftLink_Directory_Skills.lua
+CraftLink_Directory_Recipes.lua
+CraftLink_Directory_Presence.lua
+CraftLink_Directory_Community.lua
+CraftLink_Directory_Room.lua
+
+# Mes recettes (fenêtre de métier) et mes niveaux.
+CraftLink_Mine.lua
