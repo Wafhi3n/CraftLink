@@ -1,6 +1,6 @@
 # CraftLink devient l'addon qui partage les recettes connues
 
-> État : **approuvée** · Décisions A1-A11 du user le 2026-11-23 (forme de la commande du global à reconfirmer) · Protocole figé (test), rien de codé dans l'addon
+> État : **approuvée** · Décisions A1-A11 du user le 2026-11-23 · Protocole figé (test), rien de codé dans l'addon
 > Portée : CraftLink (dépôt `Wafhi3n/CraftLink`) et Crafting Order - Classic (COC) · Cible : WoW: Forever
 
 ## Le problème
