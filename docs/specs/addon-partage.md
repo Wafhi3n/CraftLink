@@ -56,6 +56,11 @@ Environ 1 400 lignes partent. Le pont entre royaumes et les relais touchent auss
 pour cette première découpe, et se décideront après (A4). `Directory_Version.lua` reste dans COC : c'est la version
 **de COC** qu'il annonce, dans le fil `SK`, ce qui demande une couture (cas particuliers).
 
+Ajusté à la copie (étape 3, 2026-11-23) : de `Directory_Community.lua`, seule la **glue réseau** part
+(`OnlinePeers`, `MarkOffline`, `_WireNoChannel`). La communauté officielle (coupée depuis le 2026-09-29), le lien
+« Rejoindre », `COC:NetworkLabel` restent chez COC : ils s'appuient sur ses cercles (`Directory_Club`). De
+`Directory_Room.lua`, `RoomCmd` et `RoomStatusLine` (la commande et la ligne de `/co`) restent aussi chez COC.
+
 ## Cas particuliers
 
 - **Un ancien COC (qui embarque encore CraftLink) avec le nouvel addon CraftLink installé** : LibStub ne garde
@@ -68,7 +73,15 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
   numéro LibStub que la source (16), mais avec des données plus anciennes (`Data/Camelot`, build 70938 pas encore
   sorti dans COC). À numéro égal, LibStub garde la première copie chargée. Ce que l'ancien COC ne doit pas recevoir
   va dans les fichiers propres de l'addon CraftLink, pas dans la bibliothèque partagée sous un numéro plus haut ; et
-  COC v1.53.0 doit marcher pareil quelle que soit la copie gardée.
+  COC v1.53.0 doit marcher pareil quelle que soit la copie gardée. Le CODE des deux copies est identique ; les
+  fichiers de DONNÉES, eux, s'inscrivent sans garde dans la même bibliothèque (`RegisterProfession` fusionne) :
+  les deux jeux tournent, le dernier chargé l'emporte. Ils ne diffèrent que des corrections du build 70938. Sur
+  Forever, le registre part en identifiants (RI), lisibles quelle que soit la donnée ; seule la découpe par palier
+  peut changer, et le receveur la lit telle qu'elle arrive.
+- **Un joueur de COC v1.53 ne distingue pas un artisan CraftLink seul d'un artisan COC** (voulu : A2, A7). Une
+  commande qu'il lui pousse ou lui adresse reste sans réponse : limite connue de la 0.1.0. Le signe existe déjà sur
+  le réseau : le `SK` d'un CraftLink seul n'a pas de `cv=` (ni `rep=`, ni `rl=1`) ; un COC à venir pourra s'en
+  servir pour ne pas lui proposer de commande.
 - **COC installé sans CraftLink** : COC ne se charge pas (dépendance obligatoire, A1). Le jeu affiche « dépendance
   manquante ». Le texte de la page CurseForge et du CHANGELOG le dit en premier.
 - **Joueur CraftLink seul** : aucune commande COC, aucune recherche de travail. Il est listé comme artisan, et la
@@ -143,12 +156,32 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
     même un membre de la guilde ou un ami qui l'a. Après la commande, il est dans le global, et y revient après un
     `/reload`. Témoin : la liste des canaux avant et après. Observateur : le user.
 
+## Contrat (CraftLink 0.1.0 ↔ COC de l'étape 6)
+
+Ce que COC lira et étendra une fois qu'il dépendra de CraftLink. Figé dès la 0.1.0 publiée : le changer casse le COC
+qui s'y branche.
+
+- **L'annuaire** : `_G.CraftLink.Directory` (`Dir`), avec `Dir.roster` (dans `CraftLinkDB.roster`), `Dir.online`,
+  `Dir.onlineGame`, `Dir.mySkills`. COC y pose ses propres méthodes, comme aujourd'hui sur `COC.Directory` (relais,
+  pont, temps de recharge, rerolls, LFW, version : `StartX`, `AnnounceCooldowns`, `AnnounceAlts`, `OnTrustEnvelope`,
+  `_MyVersion`, `_IsDevBuild`, `NotePeerVersion`, `LFWRiposte`, `RelayPartnersTo`, `BridgeOnRoomHello`, `Bridge*`,
+  `Prune*`, `ForEachCircleMemberOnline`, `_WireGreenWall`, `_WireClubs`).
+- **Les points d'accroche** (méthodes optionnelles de `Dir`, absentes quand CraftLink est seul ; ce que COC faisait
+  lui-même) : `OnArtisanOnline(nom)`, `OnAddedOnline(nom)`, `OnLinked(nom)`, `OnChanged()`, `OnSkillGain()`,
+  `RebroadcastMine()`, `Beacon()`, `Trace(catégorie, texte)`, `Delivered()` → nombre (le `rep=` du SK),
+  `OnMySkills(niveaux)`, `OnMarkOffline(nom)`.
+- **La garde** : un COC qui lit l'annuaire de CraftLink pose `CraftingOrderClassic.sharesViaCraftLink = true` ; sans
+  lui, CraftLink se met en pause (A8).
+- **La salle** : `Dir:SetRoom(on)` écrit `CraftLinkDB.global` (A11), plus `roomOff` de COC ; `Dir:RoomEnabled()` le lit.
+
 ## Plan (2026-11-23, revu après A8 ; à jeter une fois fait)
 
 1. ~~Reconfirmation de A3-A6~~ (faite le 2026-11-23, plus A8-A10).
 2. ~~Fixtures de protocole tirées de COC v1.53.0~~ (faites le 2026-11-23 : `tests/test_craftlink_protocole.lua`
    de l'outillage, dans `master`).
-3. CraftLink 0.1.0 : déclaration `addon` dans `addons.json` (`"banc": true`, branche de l'outillage, fusion sur
+3. (Codée le 2026-11-23 sur `feat/craftlink-addon` des deux dépôts, quatre portes vertes ; reste le critère 5,
+   la revue des agents, sur la demande du user. Fusion : CraftLink `main` d'abord, puis l'outillage le même jour.)
+   CraftLink 0.1.0 : déclaration `addon` dans `addons.json` (`"banc": true`, branche de l'outillage, fusion sur
    l'accord du user), `CraftLink.toc`, `CraftLinkDB`, `.pkgmeta` ; les modules du partage **copiés** depuis COC sans
    changer leur sortie (COC garde les siens jusqu'à l'étape 6) ; la garde contre l'ancien COC ; `/craftlink`.
    Critères 1, 4, 5, 9, 10.
