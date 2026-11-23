@@ -1,6 +1,6 @@
 # CraftLink devient l'addon qui partage les recettes connues
 
-> État : **brouillon** · Direction et décisions A1, A2, A7 du user le 2026-11-23 · Rien de codé · A3-A6 à reconfirmer
+> État : **approuvée** · Toutes les décisions (A1-A10) prises ou confirmées par le user le 2026-11-23 · Rien de codé
 > Portée : CraftLink (dépôt `Wafhi3n/CraftLink`) et Crafting Order - Classic (COC) · Cible : WoW: Forever
 
 ## Le problème
@@ -54,7 +54,14 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
 - **Un ancien COC (qui embarque encore CraftLink) avec le nouvel addon CraftLink installé** : LibStub ne garde
   qu'une instance, et les deux annuaires y brancheraient leurs gestionnaires (la bibliothèque accepte plusieurs
   gestionnaires par verbe) : deux PONG, deux annonces. CraftLink détecte un COC qui tient encore son propre
-  annuaire et se tait, en le disant une fois au joueur.
+  annuaire et se tait, en le disant une fois au joueur. Ce sera le cas de **tous** les premiers joueurs de
+  CraftLink 0.1.0 qui ont COC (A8) : la garde est dans la 0.1.0. Sans dépendance, l'ordre de chargement des deux
+  addons n'est pas garanti : la garde regarde une fois les deux chargés, jamais au chargement de CraftLink seul.
+- **La même bibliothèque, deux copies** (relevé le 2026-11-23) : COC v1.53.0 embarque `CraftLink-1.0` au même
+  numéro LibStub que la source (16), mais avec des données plus anciennes (`Data/Camelot`, build 70938 pas encore
+  sorti dans COC). À numéro égal, LibStub garde la première copie chargée. Ce que l'ancien COC ne doit pas recevoir
+  va dans les fichiers propres de l'addon CraftLink, pas dans la bibliothèque partagée sous un numéro plus haut ; et
+  COC v1.53.0 doit marcher pareil quelle que soit la copie gardée.
 - **COC installé sans CraftLink** : COC ne se charge pas (dépendance obligatoire, A1). Le jeu affiche « dépendance
   manquante ». Le texte de la page CurseForge et du CHANGELOG le dit en premier.
 - **Joueur CraftLink seul** : aucune commande COC, aucune recherche de travail. Il est listé comme artisan, et la
@@ -74,14 +81,25 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
   dépend.
 - 2026-11-23, **user** (A2) : ce que CraftLink sépare de COC, c'est **le partage des recettes connues par le canal
   de communication** (le réseau). Le reste de COC ne bouge pas pour l'instant.
-- 2026-11-23, agent, **à reconfirmer** (A3) : la ligne de découpe du tableau ci-dessus. Partent la découverte,
-  l'échange des recettes et des niveaux, le roster et la présence ; le reste ne bouge pas.
-- 2026-11-23, agent, **à reconfirmer** (A4) : pont entre royaumes et relais restent dans COC pour la première
+- 2026-11-23, agent, **confirmé par le user** le même jour (A3) : la ligne de découpe du tableau ci-dessus.
+  Partent la découverte, l'échange des recettes et des niveaux, le roster et la présence ; le reste ne bouge pas.
+- 2026-11-23, agent, **confirmé par le user** (A4) : pont entre royaumes et relais restent dans COC pour la première
   découpe.
-- 2026-11-23, agent, **à reconfirmer** (A5) : chaque addon garde ses propres champs ; migration une seule fois.
-- 2026-11-23, agent, **à reconfirmer** (A6) : sur CurseForge, CraftLink est une **dépendance obligatoire** de COC
-  (relation « Required Dependency » : l'appli CurseForge l'installe toute seule). Onglet Source réglé avant le
+- 2026-11-23, agent, **confirmé par le user** (A5) : chaque addon garde ses propres champs ; l'annuaire de COC est
+  recopié une seule fois dans CraftLink (personne ne perd ses artisans connus).
+- 2026-11-23, agent, **confirmé par le user** (A6) : sur CurseForge, CraftLink est une **dépendance obligatoire** de
+  COC (relation « Required Dependency » : l'appli CurseForge l'installe toute seule). Onglet Source réglé avant le
   premier tag du nouveau projet.
+- 2026-11-23, **user** (A8) : **CraftLink sort seul d'abord.** CraftLink 0.1.0 partage les recettes et vit à côté
+  du COC actuel, qui ne change pas ; le user crée le projet, CurseForge le valide ; **ensuite seulement** sort une
+  version de COC sans sa copie, avec la dépendance (A6). Raison : la modération ne valide un projet neuf qu'avec un
+  vrai fichier, et la dépendance obligatoire suppose un projet en ligne. Remplace « une seule release pour les
+  deux » de l'ancien plan.
+- 2026-11-23, **user** (A9, définitif dès la première publication) : dossier et `.toc` **`CraftLink`**, sauvegarde
+  **`CraftLinkDB`**, adresse CurseForge **`craftlink`** (variante seulement si elle est prise).
+- 2026-11-23, **user** (A10) : une commande d'état **`/craftlink`**, tapée par le joueur seulement, qui répond en une
+  ligne (« partage actif, N artisans connus dans la guilde »). Rien ne s'affiche jamais tout seul, hors du message
+  unique de la garde. Pour le joueur, et pour qu'un modérateur voie que l'addon marche.
 - 2026-11-23, **user** (A7, réponse à Q1) : un joueur qui n'a **que** CraftLink ne voit rien. Il **partage ses
   infos**, et donc aussi avec le GM et les officiers. Ceux-ci, avec **CraftLink-Discord**, mettent à jour la base
   du bot Discord avec tout ce que leur CraftLink sait (M6 de la spec du bot). CraftLink seul s'installe donc parce
@@ -103,18 +121,25 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
    une commande fait son cycle complet. Témoin : la validation à deux comptes du cycle de commande. Observateur : le
    user.
 8. [humain] Un ancien COC avec le nouvel addon CraftLink : un seul PONG par PING (trace `/co trace`), un message
-   unique au joueur. Observateur : le user.
+   unique au joueur, et COC marche comme avant (annuaire, commandes). Observateur : le user.
+9. [humain] `/craftlink` répond en une ligne : partage actif et nombre d'artisans connus. Sans la commande, CraftLink
+   n'écrit rien dans le chat. Témoin : le nombre d'artisans de l'annuaire de COC sur le même compte. Observateur :
+   le user.
 
-## Plan (2026-11-23, à jeter une fois fait)
+## Plan (2026-11-23, revu après A8 ; à jeter une fois fait)
 
-1. Reconfirmation de A3-A6 par le user.
-2. Fixtures de protocole tirées de COC v1.53.0 (critère 1), avant de déplacer quoi que ce soit.
-3. CraftLink : déclaration `addon` (branche de l'outillage), `.toc` de l'addon, sauvegarde ; les modules du partage
-   déplacés depuis COC sans changer leur sortie. Critères 1, 4, 5.
-4. COC : retrait de `Libs/CraftLink-1.0` et de `sync-libs.ps1` côté COC, `## Dependencies: CraftLink`, lecture de
-   l'annuaire de CraftLink, migration. Critères 2, 3.
-5. Banc à deux comptes : critères 6 à 8. Une seule release qui sort les deux addons le même jour.
-6. CraftLink-Discord : sa spec, puis son code (spec du bot, M12).
+1. ~~Reconfirmation de A3-A6~~ (faite le 2026-11-23, plus A8-A10).
+2. Fixtures de protocole tirées de COC v1.53.0 (critère 1), avant de copier quoi que ce soit.
+3. CraftLink 0.1.0 : déclaration `addon` dans `addons.json` (`"banc": true`, branche de l'outillage, fusion sur
+   l'accord du user), `CraftLink.toc`, `CraftLinkDB`, `.pkgmeta` ; les modules du partage **copiés** depuis COC sans
+   changer leur sortie (COC garde les siens jusqu'à l'étape 6) ; la garde contre l'ancien COC ; `/craftlink`.
+   Critères 1, 4, 5, 9.
+4. Banc à deux comptes : critères 6 et 8.
+5. Le user crée le projet CurseForge (`craftlink`), règle l'onglet Source, la page est écrite (skill
+   `curseforge-copy`) ; tag `v0.1.0` sur son feu vert ; modération.
+6. Après la validation : COC sans `Libs/CraftLink-1.0` ni `sync-libs.ps1` côté COC, `## Dependencies: CraftLink`,
+   dépendance obligatoire sur CurseForge, lecture de l'annuaire de CraftLink, migration. Critères 2, 3, 7.
+7. CraftLink-Discord : sa spec, puis son code (spec du bot, M12).
 
 ## Liens
 
