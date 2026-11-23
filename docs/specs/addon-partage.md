@@ -81,7 +81,11 @@ Ajusté à la copie (étape 3, 2026-11-23) : de `Directory_Community.lua`, seule
 - **Un joueur de COC v1.53 ne distingue pas un artisan CraftLink seul d'un artisan COC** (voulu : A2, A7). Une
   commande qu'il lui pousse ou lui adresse reste sans réponse : limite connue de la 0.1.0. Le signe existe déjà sur
   le réseau : le `SK` d'un CraftLink seul n'a pas de `cv=` (ni `rep=`, ni `rl=1`) ; un COC à venir pourra s'en
-  servir pour ne pas lui proposer de commande.
+  servir pour ne pas lui proposer de commande. Relecture réseau du 2026-11-23 : le signe est ambigu (un build de
+  dev de COC omet aussi `cv=`, un vieux COC n'a pas `rl=1`) ; une preuve positive vaudra mieux, par exemple un
+  premier `ORD` ou un accusé reçu de lui. Les chemins concernés chez COC : le transfert d'une commande captée
+  (`CraftingOrderClassic_Handoff.lua`, `CanCraft`) et les `ORD NEW` poussés à l'arrivée d'un artisan
+  (`Orders.lua`, `OnArtisanOnline`).
 - **COC installé sans CraftLink** : COC ne se charge pas (dépendance obligatoire, A1). Le jeu affiche « dépendance
   manquante ». Le texte de la page CurseForge et du CHANGELOG le dit en premier.
 - **Joueur CraftLink seul** : aucune commande COC, aucune recherche de travail. Il est listé comme artisan, et la
@@ -169,7 +173,10 @@ qui s'y branche.
 - **Les points d'accroche** (méthodes optionnelles de `Dir`, absentes quand CraftLink est seul ; ce que COC faisait
   lui-même) : `OnArtisanOnline(nom)`, `OnAddedOnline(nom)`, `OnLinked(nom)`, `OnChanged()`, `OnSkillGain()`,
   `RebroadcastMine()`, `Beacon()`, `Trace(catégorie, texte)`, `Delivered()` → nombre (le `rep=` du SK),
-  `OnMySkills(niveaux)`, `OnMarkOffline(nom)`.
+  `OnMySkills(niveaux)`, `OnMarkOffline(nom)`. Appelées en méthode, `self` = `Dir` : COC écrit
+  `Dir.OnArtisanOnline = function(_, nom) COC.Orders:OnArtisanOnline(nom) end`. Un nom mal écrit échoue en silence.
+  `OnMarkOffline` doit refaire ce que faisait l'ancien `MarkOffline` : éteindre `Dir.lfw[nom]` et rafraîchir la
+  plaque (`Nameplate:Refresh`). `RebroadcastMine` doit être posée avant `Dir:Start`.
 - **La garde** : un COC qui lit l'annuaire de CraftLink pose `CraftingOrderClassic.sharesViaCraftLink = true` ; sans
   lui, CraftLink se met en pause (A8).
 - **La salle** : `Dir:SetRoom(on)` écrit `CraftLinkDB.global` (A11), plus `roomOff` de COC ; `Dir:RoomEnabled()` le lit.
