@@ -34,6 +34,11 @@ aux commandes, à la recherche de travail, aux rerolls et à la confiance. Cons�
   restent dans COC (A3). Ce n'est que la première découpe.
 - **Toucher TradeScanner** (Era, gelé) : il garde sa copie embarquée de la bibliothèque.
 - **Écrire CraftLink-Discord ici** : sa propre spec, une fois cette découpe faite.
+- **Repenser le canal global ici.** Le user (2026-11-23) : il faudra le réingénierer, parce que l'identifiant du
+  royaume sous-jacent (le « layer », que lit `GetRealmID`) ne sera bientôt plus lisible (source et date pas
+  données). La 0.1.0 reprend la salle telle que COC la fait aujourd'hui, derrière `/craftlink global` (A11) ; la
+  refonte aura sa propre spec. Sans cet identifiant, le code actuel envoie déjà un `SK` et un `HI` sans `rm=`, que
+  tous les COC lisent (test du protocole, « sans métier ni royaume »).
 
 ## Ce qui part de COC (relu le 2026-11-23)
 
@@ -105,8 +110,9 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
 - 2026-11-23, **user** (A11) : de base, CraftLink n'utilise que la **liste d'amis et la guilde** ; le joueur tape une
   commande `/craftlink` pour **rejoindre le global** (la salle de découverte). L'avis de COC « l'addon rejoint le
   canal… » n'est donc pas écrit par CraftLink : `/craftlink` dit si le global est rejoint et comment le rejoindre.
-  Posé par l'agent, **à reconfirmer** : la forme `/craftlink global` (et `/craftlink global off`), retenue d'une
-  session à l'autre dans `CraftLinkDB`. **À trancher à l'étape 6** : COC fait rejoindre la salle par défaut
+  Forme proposée par l'agent, **confirmée par le user** le même jour : `/craftlink` = l'état ; `/craftlink global`
+  rejoint le global, `/craftlink global off` le quitte ; retenu d'une session à l'autre dans `CraftLinkDB`.
+  **À trancher à l'étape 6** : COC fait rejoindre la salle par défaut
   (aujourd'hui) ; une fois qu'il dépend de CraftLink, garde-t-il le global allumé pour ses joueurs ?
 - 2026-11-23, **user** (A7, réponse à Q1) : un joueur qui n'a **que** CraftLink ne voit rien. Il **partage ses
   infos**, et donc aussi avec le GM et les officiers. Ceux-ci, avec **CraftLink-Discord**, mettent à jour la base
