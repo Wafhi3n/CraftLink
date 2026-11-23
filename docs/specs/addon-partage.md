@@ -1,6 +1,6 @@
 # CraftLink devient l'addon qui partage les recettes connues
 
-> État : **approuvée** · Toutes les décisions (A1-A10) prises ou confirmées par le user le 2026-11-23 · Rien de codé
+> État : **approuvée** · Décisions A1-A11 du user le 2026-11-23 (forme de la commande du global à reconfirmer) · Protocole figé (test), rien de codé dans l'addon
 > Portée : CraftLink (dépôt `Wafhi3n/CraftLink`) et Crafting Order - Classic (COC) · Cible : WoW: Forever
 
 ## Le problème
@@ -21,6 +21,8 @@ aux commandes, à la recherche de travail, aux rerolls et à la confiance. Cons�
   réseau et tient l'annuaire de ceux qui l'ont aussi : leurs métiers, leurs niveaux, leurs recettes, leur présence.
 - **COC n'embarque plus CraftLink** : il en dépend, et lit l'annuaire que CraftLink tient.
 - Un joueur avec **CraftLink seul** est vu comme artisan par les joueurs de COC, exactement comme un joueur de COC.
+- Par défaut, CraftLink ne cherche ses pairs que dans la **guilde** et la **liste d'amis**. Le canal global (la
+  salle de découverte) ne se rejoint que sur une commande du joueur (A11).
 - **CraftLink-Discord**, plus tard, s'appuie sur CraftLink pour envoyer les métiers au bot (contrat `CM1` de la spec
   du bot).
 
@@ -100,6 +102,12 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
 - 2026-11-23, **user** (A10) : une commande d'état **`/craftlink`**, tapée par le joueur seulement, qui répond en une
   ligne (« partage actif, N artisans connus dans la guilde »). Rien ne s'affiche jamais tout seul, hors du message
   unique de la garde. Pour le joueur, et pour qu'un modérateur voie que l'addon marche.
+- 2026-11-23, **user** (A11) : de base, CraftLink n'utilise que la **liste d'amis et la guilde** ; le joueur tape une
+  commande `/craftlink` pour **rejoindre le global** (la salle de découverte). L'avis de COC « l'addon rejoint le
+  canal… » n'est donc pas écrit par CraftLink : `/craftlink` dit si le global est rejoint et comment le rejoindre.
+  Posé par l'agent, **à reconfirmer** : la forme `/craftlink global` (et `/craftlink global off`), retenue d'une
+  session à l'autre dans `CraftLinkDB`. **À trancher à l'étape 6** : COC fait rejoindre la salle par défaut
+  (aujourd'hui) ; une fois qu'il dépend de CraftLink, garde-t-il le global allumé pour ses joueurs ?
 - 2026-11-23, **user** (A7, réponse à Q1) : un joueur qui n'a **que** CraftLink ne voit rien. Il **partage ses
   infos**, et donc aussi avec le GM et les officiers. Ceux-ci, avec **CraftLink-Discord**, mettent à jour la base
   du bot Discord avec tout ce que leur CraftLink sait (M6 de la spec du bot). CraftLink seul s'installe donc parce
@@ -122,18 +130,22 @@ pour cette première découpe, et se décideront après (A4). `Directory_Version
    user.
 8. [humain] Un ancien COC avec le nouvel addon CraftLink : un seul PONG par PING (trace `/co trace`), un message
    unique au joueur, et COC marche comme avant (annuaire, commandes). Observateur : le user.
-9. [humain] `/craftlink` répond en une ligne : partage actif et nombre d'artisans connus. Sans la commande, CraftLink
-   n'écrit rien dans le chat. Témoin : le nombre d'artisans de l'annuaire de COC sur le même compte. Observateur :
-   le user.
+9. [humain] `/craftlink` répond en une ligne : partage actif, nombre d'artisans connus, global rejoint ou non.
+   Sans la commande, CraftLink n'écrit rien dans le chat. Témoin : le nombre d'artisans de l'annuaire de COC sur le
+   même compte. Observateur : le user.
+10. [humain] Sans la commande du global, CraftLink ne rejoint aucun canal (liste des canaux du chat) et voit quand
+    même un membre de la guilde ou un ami qui l'a. Après la commande, il est dans le global, et y revient après un
+    `/reload`. Témoin : la liste des canaux avant et après. Observateur : le user.
 
 ## Plan (2026-11-23, revu après A8 ; à jeter une fois fait)
 
 1. ~~Reconfirmation de A3-A6~~ (faite le 2026-11-23, plus A8-A10).
-2. Fixtures de protocole tirées de COC v1.53.0 (critère 1), avant de copier quoi que ce soit.
+2. ~~Fixtures de protocole tirées de COC v1.53.0~~ (faites le 2026-11-23 : `tests/test_craftlink_protocole.lua`
+   de l'outillage, dans `master`).
 3. CraftLink 0.1.0 : déclaration `addon` dans `addons.json` (`"banc": true`, branche de l'outillage, fusion sur
    l'accord du user), `CraftLink.toc`, `CraftLinkDB`, `.pkgmeta` ; les modules du partage **copiés** depuis COC sans
    changer leur sortie (COC garde les siens jusqu'à l'étape 6) ; la garde contre l'ancien COC ; `/craftlink`.
-   Critères 1, 4, 5, 9.
+   Critères 1, 4, 5, 9, 10.
 4. Banc à deux comptes : critères 6 et 8.
 5. Le user crée le projet CurseForge (`craftlink`), règle l'onglet Source, la page est écrite (skill
    `curseforge-copy`) ; tag `v0.1.0` sur son feu vert ; modération.
