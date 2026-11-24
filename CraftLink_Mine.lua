@@ -12,13 +12,15 @@ local Mine = {}
 NS.Mine = Mine
 local CraftLink = LibStub and LibStub:GetLibrary("CraftLink-1.0", true)
 
--- knownRecipes[« Prénom-Royaume »] : la base est par COMPTE, on ne charge et ne diffuse que la partition
+-- knownRecipes[« Prénom- »] : la base est par COMPTE, on ne charge et ne diffuse que la partition
 -- du perso courant, sinon les métiers d'un reroll fuiraient dans mon annonce (même découpage que COC).
+-- La clé ne lit plus le royaume : GetRealmName() rend "" depuis le build 71037 de Forever (mesuré le
+-- 2026-11-24), et le relire recouperait la base s'il revenait (même clé que COC.Api.CharKey).
 function Mine:Store()
     local db = NS.db
     if not db then return nil end
     db.knownRecipes = db.knownRecipes or {}
-    local me = ((UnitName and UnitName("player")) or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "")
+    local me = ((UnitName and UnitName("player")) or "?") .. "-"
     db.knownRecipes[me] = db.knownRecipes[me] or {}
     return db.knownRecipes[me]
 end

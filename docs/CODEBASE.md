@@ -1,6 +1,6 @@
 # CraftLink — carte du code
 
-> **GÉNÉRÉ** le 2026-11-23 (v0.1.0) par `scripts\gen_docs.ps1` — ne pas éditer à la main :
+> **GÉNÉRÉ** le 2026-11-24 (v0.1.0) par `scripts\gen_docs.ps1` — ne pas éditer à la main :
 > relancer le script (deploy.ps1 le fait) après un changement de structure. Source de chaque
 > rubrique : le `.toc` (ordre de chargement) et les commentaires d'en-tête des fichiers eux-mêmes.
 
@@ -23,7 +23,7 @@
 | `CraftLink_Directory_Presence.lua` | présence : la vérité JEU (amis/guilde) et sa fusion avec la vérité ADDON. | 150 |
 | `CraftLink_Directory_Community.lua` | le réseau SANS canal : la glue entre la bibliothèque et l'annuaire. | 41 |
 | `CraftLink_Directory_Room.lua` | la salle de découverte : le canal global rejoint pour SE PRÉSENTER, pas pour transporter. | 57 |
-| `CraftLink_Mine.lua` | MES recettes et mes niveaux : ce que CraftingOrderClassic.lua (v1.53.0) faisait pour l'annuaire, repris pour CraftLink seul (spec docs/specs/addon-partage.md, étape 3). | 72 |
+| `CraftLink_Mine.lua` | MES recettes et mes niveaux : ce que CraftingOrderClassic.lua (v1.53.0) faisait pour l'annuaire, repris pour CraftLink seul (spec docs/specs/addon-partage.md, étape 3). | 74 |
 
 ## Kit UI — référence `Skin.*` (extraite des fichiers *Skin*)
 
