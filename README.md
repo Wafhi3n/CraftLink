@@ -1,58 +1,38 @@
-# CraftLink-1.0
+# CraftLink
 
-Librairie **embarquée** (LibStub) — infrastructure partagée des addons de craft.
-Source canonique unique ; **pas un addon installé séparément**.
+A WoW: Forever addon that shares your professions and the recipes you know with your guild and
+friends, so Crafting Order players can find you without you installing Crafting Order.
 
-> **Cible unique : WoW: Forever / Camelot** (API MAINLINE, interface 16001) depuis le 2026-09-21.
-> La lecture de la fenêtre métier (`CraftLink_Recipes`, `CraftLink_Cooldowns`) ne passe plus que
-> par `C_TradeSkillUI` ; les lectures Classic Era (API TradeSkill par index, API Craft de
-> l'Enchantement) ont été **retirées** — l'Era est gelé et plus aucun consommateur ne l'embarque.
-> Les données Vanilla/TBC/Wrath de `Data/` restent (catalogues figés), seule la LECTURE du client a
-> perdu ses branches Classic. Y revenir = ajouter un backend, pas rouvrir ces branches.
+Get it on CurseForge: https://www.curseforge.com/wow/addons/craftlink
 
-## Ce qu'elle fournit (infra générique seulement)
+Commands: `/craftlink` (one status line), `/craftlink global` (join the global CraftLink channel),
+`/craftlink global off` (leave it). By default CraftLink only talks to your guild and your friends,
+and it writes nothing in chat unless you type `/craftlink`. Open each profession window once: that's
+where it reads your recipes.
 
-- **Catalogue de recettes** canonique (`CraftLink-1.0.lua`) — index des positions de bits par métier.
-- **Métadonnées de recettes** (`Data/<flavor>/`) : `produces` (objet produit), `reagents`
-  (composants), `learnedAt` (niveau d'apprentissage), `taughtBy` (objet-plan → sort enseigné) —
-  accesseurs `RecipeProduct` / `RecipeReagents` / `RecipeLearnedAt` / `RecipeFromPlanItem`.
-- **Codec hex du registre** (`CraftLink_Registry.lua`) — « quelles recettes je connais » en bitfield
-  compact, diffusable en un addon message.
-- **Versions** : `dataVersion` (compat des index de bits) + `protocolVersion` (compat du wire).
-- **Transports** (`CraftLink_Transport.lua`) : découverte par balise texte (hardware event) +
-  données en WHISPER dirigé. **Sans canal** (`CraftLink_Fanout.lua`, le cas de Forever où le canal
-  est morcelé) : la portée « global » part en whisper vers les pairs que l'hôte désigne
-  (`SetPeerSource`), avec plafond, anti-doublon et lecture du code de `SendAddonMessage`.
-  **Qui parle ?** (`CraftLink_Sender.lua`, chargé avant le transport) : nom court, royaume admis, et
-  lisibilité — un message dont le texte ou l'émetteur est une valeur SECRÈTE (chat en instance sur
-  Forever) est laissé passer avant toute comparaison.
+CraftLink doesn't take orders. If Crafting Order 1.53 or older is installed next to it, CraftLink
+pauses and leaves the sharing to Crafting Order.
 
-> Ce qui touche les **gens** (présence, profils, favoris, réputation) **n'est pas** ici — ça vit
-> dans le produit *Crafting Order - Classic*. CraftLink ne connaît ni l'UI ni le skin de l'hôte.
+## Translations
 
-## Distribution
+CraftLink is written in French and comes in English, German and Spanish. To fix a line, open the
+`CraftLink_Locale_<language>.lua` file on GitHub and change the text after the `=`; the key on the
+left is the French original and stays as it is. Pull requests are welcome.
 
-Modèle Ace : **repo propre** (versionné, tags) **+ embarquée** dans chaque addon. Les utilisateurs
-n'installent que les addons ; LibStub ne garde qu'une instance au runtime (version la plus haute).
+## The library
 
-- Source de vérité : ce repo (`CraftLink-1.0/`, `LibStub/`).
-- Sync vers les addons hôtes : `sync-libs.ps1` (copie dans `Addon/Libs/`).
-- Inclusion côté addon : une seule ligne `.toc` → `Libs\CraftLink-1.0\lib.xml`.
-- Packaging CurseForge : `.pkgmeta` (projet « Library », embarqué dans les addons hôtes).
+The `CraftLink-1.0` folder is also a LibStub library, which Crafting Order still embeds until it
+depends on this addon. It holds the recipe catalogue and the per-profession data, the hex codec of
+the known-recipes registry, the network protocol and its transports. LibStub keeps one copy at run
+time, and at the same version number the first one loaded wins, so the addon and an embedded copy
+share a single instance.
 
-## Addons hôtes
+- `CraftLink-1.0/` and `LibStub/`: the library, the one source of truth. `sync-libs.ps1` copies it
+  into host addons (`Libs/`), loaded by one `.toc` line, `Libs\CraftLink-1.0\lib.xml`.
+- `CraftLink*.lua`: the addon (directory, presence, recipe scan, `/craftlink`).
+- `tools/`: offline generation of `CraftLink-1.0/Data/<flavor>/*.lua` from the game client's tables
+  and cached Wowhead pages (see `tools/README.md`).
+- `docs/specs/addon-partage.md`: why and how CraftLink left Crafting Order (in French).
 
-- **Crafting Order - Classic** — réseau global/social de commandes de craft. Seul addon
-  embarquant CraftLink aujourd'hui.
-
-> **Guild Economy (TradeScanner) n'embarque plus CraftLink depuis sa v2.0.0** (2026-06-30,
-> « Étape F ») : le craft-social (registre, roster, fenêtre métier) a été retiré de TS et vit
-> désormais exclusivement dans Crafting Order - Classic. TS est un pur scanner d'offres de trade.
-
-## Outillage de génération
-
-`tools/` (déplacé depuis `TradeScanner/tools/` le 2026-07-02) contient la chaîne de génération
-hors-ligne des données par métier (`CraftLink-1.0/Data/<flavor>/*.lua`) — source courante :
-**Wowhead** (MTSL = provenance historique du set Vanilla figé). Outils clés :
-`gen_metadata.lua` (complète learnedAt/taughtBy, idempotent) et `check_dataversion.lua`
-(garde l'invariant Vanilla `1792301894`). Voir `tools/README.md`.
+Only WoW: Forever (Interface 16001, Mainline API) is targeted. The Vanilla, TBC and Wrath data sets
+stay as frozen catalogues.
