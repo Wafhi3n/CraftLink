@@ -1,0 +1,38 @@
+## Interface: 16001
+## Title: CraftLink
+## Notes: Shares your professions and known recipes with your guild and friends. /craftlink for its status.
+## Notes-frFR: Partage tes métiers et tes recettes connues avec ta guilde et tes amis. /craftlink pour l'état.
+## Author: Wafhi3n
+## Version: 0.1.0
+## X-Website: https://github.com/Wafhi3n/CraftLink
+## SavedVariables: CraftLinkDB
+
+# CraftLink, l'addon (spec docs/specs/addon-partage.md) : le partage des recettes connues, sorti de
+# Crafting Order. La bibliothèque CraftLink-1.0 reste dans son dossier et garde ses autres hôtes (COC
+# l'embarque encore jusqu'à l'étape 6 de la spec ; LibStub ne garde qu'une copie, à numéro égal la
+# première chargée).
+LibStub\LibStub.lua
+CraftLink-1.0\lib.xml
+CraftLink-1.0\Data\Camelot.xml
+
+# Localisation : la CLE est le texte FRANCAIS, chaque autre langue est un overlay charge APRES.
+CraftLink_Locale.lua
+CraftLink_Locale_enUS.lua
+CraftLink_Locale_deDE.lua
+CraftLink_Locale_esES.lua
+
+# Socle : adaptations d'API, table d'addon, SavedVariables, garde contre un ancien Crafting Order,
+# commande /craftlink, démarrage du partage.
+CraftLink_Api.lua
+CraftLink.lua
+
+# Le partage, copié de l'annuaire de Crafting Order v1.53.0 (même protocole, au caractère près).
+CraftLink_Directory.lua
+CraftLink_Directory_Skills.lua
+CraftLink_Directory_Recipes.lua
+CraftLink_Directory_Presence.lua
+CraftLink_Directory_Community.lua
+CraftLink_Directory_Room.lua
+
+# Mes recettes (fenêtre de métier) et mes niveaux.
+CraftLink_Mine.lua
