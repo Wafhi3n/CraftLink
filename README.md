@@ -3,7 +3,7 @@
 A WoW: Forever addon that shares your professions and the recipes you know with your guild and
 friends, so Crafting Order players can find you without you installing Crafting Order.
 
-Get it on CurseForge: https://www.curseforge.com/wow/addons/craftlink
+Get it on CurseForge: https://www.curseforge.com/wow/addons/craftlinknetwork
 
 Commands: `/craftlink` (one status line), `/craftlink global` (join the global CraftLink channel),
 `/craftlink global off` (leave it). By default CraftLink only talks to your guild and your friends,
