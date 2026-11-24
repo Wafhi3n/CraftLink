@@ -120,7 +120,8 @@ Ajusté à la copie (étape 3, 2026-11-23) : de `Directory_Community.lua`, seule
   vrai fichier, et la dépendance obligatoire suppose un projet en ligne. Remplace « une seule release pour les
   deux » de l'ancien plan.
 - 2026-11-23, **user** (A9, définitif dès la première publication) : dossier et `.toc` **`CraftLink`**, sauvegarde
-  **`CraftLinkDB`**, adresse CurseForge **`craftlink`** (variante seulement si elle est prise).
+  **`CraftLinkDB`**, adresse CurseForge **`craftlink`** (variante seulement si elle est prise). Le 2026-11-24, le
+  projet a été créé à `craftlinknetwork` (projet 1828551) : c'est l'adresse publique.
 - 2026-11-23, **user** (A10) : une commande d'état **`/craftlink`**, tapée par le joueur seulement, qui répond en une
   ligne (« partage actif, N artisans connus dans la guilde »). Rien ne s'affiche jamais tout seul, hors du message
   unique de la garde. Pour le joueur, et pour qu'un modérateur voie que l'addon marche.
