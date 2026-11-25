@@ -186,6 +186,9 @@ qui s'y branche.
 - **La garde** : un COC qui lit l'annuaire de CraftLink pose `CraftingOrderClassic.sharesViaCraftLink = true` ; sans
   lui, CraftLink se met en pause (A8).
 - **La salle** : `Dir:SetRoom(on)` écrit `CraftLinkDB.global` (A11), plus `roomOff` de COC ; `Dir:RoomEnabled()` le lit.
+- **La clé d'un perso** (2026-11-24, spec COC `cle-perso-sans-royaume.md`) : `CraftLinkDB.knownRecipes["Prénom-"]`,
+  sans royaume, comme `COC.Api.CharKey()`. Le jeu ne donne plus le royaume depuis le build 71037 ; la clé ne le lit
+  plus, pour ne pas se recouper s'il revient.
 
 ## Plan (2026-11-23, revu après A8 ; à jeter une fois fait)
 
